@@ -1,0 +1,73 @@
+package org.jenkinsci.plugins.infonovabuildstats.xstream;
+
+import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+import org.jenkinsci.plugins.infonovabuildstats.InfonovaBuildStatsPlugin;
+import org.jenkinsci.plugins.infonovabuildstats.model.JobBuildResult;
+import org.jenkinsci.plugins.infonovabuildstats.model.JobBuildResultSharder;
+
+import com.thoughtworks.xstream.converters.Converter;
+import com.thoughtworks.xstream.converters.MarshallingContext;
+import com.thoughtworks.xstream.converters.UnmarshallingContext;
+import com.thoughtworks.xstream.io.HierarchicalStreamReader;
+import com.thoughtworks.xstream.io.HierarchicalStreamWriter;
+
+
+public class InfonovaBuildStatsXStreamConverter implements Converter {
+
+    private static final Logger LOGGER = Logger.getLogger(InfonovaBuildStatsXStreamConverter.class.getName());
+
+    public static final String JOB_BUILD_RESULT_CLASS_ALIAS = "jbr";
+
+    @Override
+    public boolean canConvert(Class type) {
+        return InfonovaBuildStatsPlugin.class.isAssignableFrom(type);
+    }
+
+    @Override
+    public void marshal(Object source, HierarchicalStreamWriter writer, MarshallingContext context) {
+
+        LOGGER.info("Start marshalling plugin.");
+
+        InfonovaBuildStatsPlugin plugin = (InfonovaBuildStatsPlugin)source;
+
+        plugin.getJobBuildResultsSharder().applyQueuedResultsInFiles();
+
+        LOGGER.info("Finished marshalling plugin.");
+
+    }
+
+    @Override
+    public Object unmarshal(HierarchicalStreamReader reader, UnmarshallingContext context) {
+
+        LOGGER.info("Start unmarshalling plugin.");
+
+        InfonovaBuildStatsPlugin plugin;
+
+        if (context.currentObject() == null || !(context.currentObject() instanceof InfonovaBuildStatsPlugin)) {
+            // This should never happen to get here
+            LOGGER.log(Level.INFO, "Plugin is created with NEW!!!");
+
+            plugin = new InfonovaBuildStatsPlugin();
+        } else {
+            // Retrieving already instantiated GlobalBuildStats plugin into current context ..
+            plugin = (InfonovaBuildStatsPlugin)context.currentObject();
+        }
+
+        /* Nothing great to do, only reload the jobBuildResults of the JobBuildResultsSharder (within the plugin) */
+
+        LOGGER.log(Level.INFO, "Load jobBuildResults from jobBuildResultsSharder.load.");
+
+        List<JobBuildResult> jobBuildResults = JobBuildResultSharder.load();
+
+        LOGGER.log(Level.INFO, "loaded jobBuildResults: " + jobBuildResults.size());
+
+        plugin.reloadJobBuildResults(jobBuildResults);
+
+        LOGGER.info("Finished unmarshalling plugin.");
+
+        return plugin;
+    }
+}
