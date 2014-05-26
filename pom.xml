@@ -8,7 +8,7 @@
 
     <groupId>org.jenkins-ci.plugins</groupId>
     <artifactId>infonova-build-stats</artifactId>
-    <version>1.0</version>
+    <version>1.1-SNAPSHOT</version>
     <packaging>hpi</packaging>
 
     <developers>
@@ -20,9 +20,9 @@
     </developers>
 
     <scm>
-        <connection>scm:svn:http://grzsvn01.infonova.at/ise/tools/jenkins/plugins/infonova-build-stats-plugin/tags/infonova-build-stats-1.0</connection>
-        <developerConnection>scm:svn:http://grzsvn01.infonova.at/ise/tools/jenkins/plugins/infonova-build-stats-plugin/tags/infonova-build-stats-1.0</developerConnection>
-        <url>http://grzsvn01.infonova.at/ise/tools/jenkins/plugins/infonova-build-stats-plugin/tags/infonova-build-stats-1.0</url>
+        <connection>scm:svn:http://grzsvn01.infonova.at/ise/tools/jenkins/plugins/infonova-build-stats-plugin/trunk</connection>
+        <developerConnection>scm:svn:http://grzsvn01.infonova.at/ise/tools/jenkins/plugins/infonova-build-stats-plugin/trunk</developerConnection>
+        <url>http://grzsvn01.infonova.at/ise/tools/jenkins/plugins/infonova-build-stats-plugin/trunk</url>
     </scm>
 
     <distributionManagement>
