@@ -5,7 +5,6 @@ import hudson.Plugin;
 import hudson.model.ManagementLink;
 import hudson.model.TaskListener;
 import hudson.model.AbstractBuild;
-import hudson.model.Hudson;
 import hudson.model.listeners.ItemListener;
 import hudson.model.listeners.RunListener;
 import hudson.security.AccessDeniedException2;
@@ -25,18 +24,20 @@ import org.jenkinsci.plugins.infonovabuildstats.model.JobBuildResult;
 import org.jenkinsci.plugins.infonovabuildstats.model.JobBuildResultSharder;
 import org.kohsuke.stapler.bind.JavaScriptMethod;
 
+/**
+ * Plugin collects builds stats in two ways:
+ * - ongoing (see in method {@link GlobalBuildStatsRunListener#onCompleted(AbstractBuild, TaskListener) onCompleted} if
+ * config is enabled (see in class {@link org.jenkinsci.plugins.infonovabuildstats.InfonovaBuildStatsConfig} <br>
+ * - or through explicit data initialization via GUI {@link #generateBuildInfos()}
+ * 
+ * */
+
 public class InfonovaBuildStatsPlugin extends Plugin {
 
     private static final Logger LOGGER = Logger.getLogger(InfonovaBuildStatsPlugin.class.getName());
 
-    /**
-     * Business layer for infonova build stats
-     */
     transient private final InfonovaBuildStatsBusiness business = new InfonovaBuildStatsBusiness(this);
 
-    /**
-     * TODO Update Comment (due to changes)
-     */
     private JobBuildResultSharder jobBuildResultsSharder = new JobBuildResultSharder();
 
     /**
@@ -46,17 +47,30 @@ public class InfonovaBuildStatsPlugin extends Plugin {
         super.load();
     }
 
+    /**
+     * @return File the config file of plugin
+     * */
+
     public File getConfigXmlFile() {
         return getConfigXml().getFile();
     }
+
+    /**
+     * Used to work with the plugin singleton
+     * 
+     * @return InfonovaBuildStatsPlugin - the actual loaded plugin from jenkins instance
+     */
 
     public static InfonovaBuildStatsPlugin getInstance() {
         return Jenkins.getInstance().getPlugin(InfonovaBuildStatsPlugin.class);
     }
 
+    /**
+     * 
+     * @return InfonovaBuildStatsBusiness - the business layer of plugin
+     */
+
     public static InfonovaBuildStatsBusiness getPluginBusiness() {
-        // Retrieving global build stats plugin & adding build result to the registered build
-        // result
         return getInstance().business;
     }
 
@@ -67,11 +81,24 @@ public class InfonovaBuildStatsPlugin extends Plugin {
         return this.jobBuildResultsSharder.getJobBuildResults();
     }
 
+    /**
+     * 
+     * @return JobBuildResultSharder
+     */
+    public JobBuildResultSharder getJobBuildResultsSharder() {
+        return jobBuildResultsSharder;
+    }
+
+    /**
+     * Inner class for loading the plugin, when jenkins instance is loaded
+     * 
+     * 
+     */
     @Extension
     public static class InfonovaBuildStatsItemListener extends ItemListener {
 
         /**
-         * After all items are loaded, plugin is loaded
+         * Called from jenkins for (re-) loading plugin
          */
         @Override
         public void onLoaded() {
@@ -88,39 +115,50 @@ public class InfonovaBuildStatsPlugin extends Plugin {
         // every job results
     }
 
-    @Extension
-    public static class GlobalBuildStatsRunListener extends RunListener<AbstractBuild> {
 
-        public GlobalBuildStatsRunListener() {
+    /**
+     * Used to collect build stats data if job is completed.
+     * 
+     */
+    @Extension
+    public static class InfonovaBuildStatsRunListener extends RunListener<AbstractBuild> {
+
+        public InfonovaBuildStatsRunListener() {
             super(AbstractBuild.class);
         }
 
+
+        /**
+         * 
+         * @param r - The completed build
+         * @param listener - Could be used to write log-messages into job
+         */
         @Override
         public void onCompleted(AbstractBuild r, TaskListener listener) {
 
-            LOGGER.info("A job completed, should be logged? ");
+            LOGGER.log(Level.FINER, "A job completed, should be logged? ");
 
             InfonovaBuildStatsConfig config = GlobalConfiguration.all().get(InfonovaBuildStatsConfig.class);
 
             // Only collect job data if config is enabled
             if (config.isCollectBuildStats()) {
 
-                LOGGER.info("Collect job data is enabled, start logging job.");
+                LOGGER.log(Level.FINER, "Collect job data is enabled, start logging job.");
 
                 super.onCompleted(r, listener);
 
                 getPluginBusiness().onJobCompleted(r);
 
-                LOGGER.info("Finished job logging.");
+                LOGGER.log(Level.FINER, "Finished job logging.");
             } else {
 
-                LOGGER.info("Collect job data is disabled, no further action.");
+                LOGGER.log(Level.FINER, "Collect job data is disabled, no further action.");
             }
         }
     }
 
     /**
-     * Let's add a link in the administration panel linking to the infonova build stats page
+     * Responsible for the global configuration link of plugin in jenkins
      */
     @Extension
     public static class InfonovaBuildStatsManagementLink extends ManagementLink {
@@ -145,24 +183,28 @@ public class InfonovaBuildStatsPlugin extends Plugin {
         }
     }
 
-    public JobBuildResultSharder getJobBuildResultsSharder() {
-        return jobBuildResultsSharder;
-    }
-
+    /**
+     * Method is called from Jelly file
+     * "src/main/resources/org/jenkinsci/plugins/infonovabuildstats/InfonovaBuildStatsPlugin/index.jelly"
+     * 
+     * @return String - The state of the execution of recordBuildInfos
+     * 
+     * @throws IOException
+     */
     @JavaScriptMethod
     public String generateBuildInfos() throws IOException {
 
         try {
 
-            LOGGER.log(Level.FINER, "Logger test for record build infos (before check permissions).");
+            LOGGER.log(Level.FINER, "Check permissions before generating build infos.");
 
-            Hudson.getInstance().checkPermission(getRequiredPermission());
-
-            LOGGER.log(Level.FINER, "Logger test for record build infos (after check permissions).");
+            Jenkins.getInstance().checkPermission(getRequiredPermission());
 
         } catch (AccessDeniedException2 e) {
 
-            LOGGER.log(Level.SEVERE, "Permission denied!");
+            LOGGER.log(Level.WARNING, "Permission denied!");
+
+            return "PERMISSION_DENIED";
 
         } catch (Exception e) {
 
@@ -171,7 +213,7 @@ public class InfonovaBuildStatsPlugin extends Plugin {
             return "NOT_OKAY";
         }
 
-        LOGGER.log(Level.FINER, "Correct permissions");
+        LOGGER.log(Level.FINER, "Correct permissions!");
 
         business.recordBuildInfos();
 
@@ -179,6 +221,10 @@ public class InfonovaBuildStatsPlugin extends Plugin {
 
     }
 
+    /**
+     * 
+     * @return Permission - the permission needed for generateBuildInfos
+     */
     public Permission getRequiredPermission() {
         return Jenkins.ADMINISTER;
     }

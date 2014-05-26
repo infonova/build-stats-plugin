@@ -16,7 +16,12 @@ import org.jenkinsci.plugins.infonovabuildstats.InfonovaBuildStatsPlugin;
 import org.jenkinsci.plugins.infonovabuildstats.model.JobBuildResult;
 import org.jenkinsci.plugins.infonovabuildstats.xstream.InfonovaBuildStatsXStreamConverter;
 
-
+/**
+ * Class which is used for saving plugin state and builds.
+ * Contains also the initialization of the XSTREAM config (used to write build stats to xml file)
+ * and the registration of the XSTREAM converter see private method initializeXStream().
+ * 
+ */
 public class InfonovaBuildStatsPluginSaver {
 
     private static final Logger LOGGER = Logger.getLogger(InfonovaBuildStatsPluginSaver.class.getName());
@@ -24,33 +29,39 @@ public class InfonovaBuildStatsPluginSaver {
     private InfonovaBuildStatsPlugin plugin;
 
     /**
-     * See
-     * {@link #updatePlugin(hudson.plugins.global_build_stats.business.GlobalBuildStatsPluginSaver.BeforeSavePluginCallback)}
-     * Use of a size 1 thread pool frees us from worring about accidental thread death.
+     * See {@link #updatePlugin(BeforeSavePluginCallback)} <br>
+     * Use of a size 1 thread pool frees us from worring about
+     * accidental thread death.
      */
     final ExecutorService writer = Executors.newFixedThreadPool(1, new DaemonThreadFactory());
 
     public InfonovaBuildStatsPluginSaver(InfonovaBuildStatsPlugin plugin) {
         this.plugin = plugin;
 
+        // call to initialization of XSTREAM
         this.initializeXStream();
     }
 
+    /**
+     * 
+     */
     private void initializeXStream() {
+        // registers the InfonovaBuildStatsXStreamConverter with XSTREAM
         Jenkins.XSTREAM.registerConverter(new InfonovaBuildStatsXStreamConverter());
 
         // XStream compacting aliases...
         Jenkins.XSTREAM.alias(InfonovaBuildStatsXStreamConverter.JOB_BUILD_RESULT_CLASS_ALIAS, JobBuildResult.class);
 
-        Jenkins.XSTREAM.aliasField("name", JobBuildResult.class, "jobName");
-        Jenkins.XSTREAM.aliasField("number", JobBuildResult.class, "buildNumber");
         Jenkins.XSTREAM.aliasField("id", JobBuildResult.class, "buildId");
+        Jenkins.XSTREAM.aliasField("name", JobBuildResult.class, "jobName");
+        Jenkins.XSTREAM.aliasField("class", JobBuildResult.class, "buildClass");
+        Jenkins.XSTREAM.aliasField("number", JobBuildResult.class, "buildNumber");
         Jenkins.XSTREAM.aliasField("result", JobBuildResult.class, "result");
         Jenkins.XSTREAM.aliasField("startDate", JobBuildResult.class, "buildStartDate");
         Jenkins.XSTREAM.aliasField("executionDate", JobBuildResult.class, "buildExecuteDate");
         Jenkins.XSTREAM.aliasField("completionDate", JobBuildResult.class, "buildCompletedDate");
-        Jenkins.XSTREAM.aliasField("overallDuration", JobBuildResult.class, "overallDuration");
-        Jenkins.XSTREAM.aliasField("executionDuration", JobBuildResult.class, "executionDuration");
+        Jenkins.XSTREAM.aliasField("duration", JobBuildResult.class, "duration");
+        Jenkins.XSTREAM.aliasField("queueDuration", JobBuildResult.class, "queueDuration");
         Jenkins.XSTREAM.aliasField("nodeLabel", JobBuildResult.class, "nodeLabel");
         Jenkins.XSTREAM.aliasField("nodeName", JobBuildResult.class, "nodeName");
         Jenkins.XSTREAM.aliasField("userName", JobBuildResult.class, "userName");
@@ -92,7 +103,7 @@ public class InfonovaBuildStatsPluginSaver {
 
         callback.changePluginStateBeforeSavingIt(plugin);
 
-        LOGGER.log(Level.INFO, "Infonova build stats - updatePlugin!");
+        LOGGER.log(Level.FINER, "Infonova build stats - updatePlugin!");
 
         writer.submit(new Runnable() {
 
@@ -103,15 +114,15 @@ public class InfonovaBuildStatsPluginSaver {
 
                     if (!plugin.getJobBuildResultsSharder().pendingChanges()) {
 
-                        LOGGER.log(Level.INFO, "No change detected in update queue no update required !");
+                        LOGGER.log(Level.FINER, "No change detected in update queue no update required !");
 
                         return;
                     }
 
-                    LOGGER.log(Level.INFO, "We have changes, save plugin");
+                    LOGGER.log(Level.FINER, "We have changes, save plugin");
 
                     if (BulkChange.contains(plugin)) {
-                        LOGGER.log(Level.INFO, "...but bulkChange contains plugins...");
+                        LOGGER.log(Level.FINER, "...but bulkChange contains plugins...");
                     }
 
                     plugin.save();

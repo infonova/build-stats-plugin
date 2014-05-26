@@ -1,35 +1,41 @@
 package org.jenkinsci.plugins.infonovabuildstats.model;
 
-import java.util.Calendar;
 import java.util.Comparator;
 
-
+/**
+ * Represants the job build results.
+ * If class member is added don't forget to adapt XSTREAM initialization in
+ * {@link org.jenkinsci.plugins.infonovabuildstats.business.InfonovaBuildStatsPluginSaver InfonovaBuildStatsPluginSaver}
+ * private method "initializeXStream".
+ * 
+ */
 public class JobBuildResult {
 
     public static final String MASTER_NODE_NAME = "master";
 
-    private String buildId;
-
-    private BuildResult result;
-
     private String jobName;
+
+    private String buildClass;
+
+    private String buildId;
 
     private int buildNumber;
 
+    private BuildResult result;
+
     /* Date when job was started */
-    private Calendar buildStartDate;
+    private long buildStartDate;
 
     /* Date when job was executed */
-    private Calendar buildExecuteDate;
+    private long buildExecuteDate;
 
     /* Date when job was completed */
-    private Calendar buildCompletedDate;
+    private long buildCompletedDate;
 
     /* build overall duration */
-    private long overallDuration = -1;
+    private long duration = -1;
 
-    /* build execution duration */
-    private long executionDuration = -1;
+    private long queueDuration = -1;
 
     private String nodeLabel;
 
@@ -37,28 +43,29 @@ public class JobBuildResult {
 
     private String userName = null;
 
-    public JobBuildResult(String _buildId, BuildResult _result, String _jobName, int _buildNumber,
-            Calendar _buildStartDate, Calendar _buildCompletedDate, Calendar _buildExecuteDate, long _overallDuration,
-            long _executionDuration, String _nodeLabel, String _nodeName, String _userName) {
+    public JobBuildResult(String _buildId, BuildResult _result, String _jobName, String _buildClass, int _buildNumber,
+            long _buildStartDate, long _buildCompletedDate, long _buildExecuteDate, long _duration,
+            long _queueDuration, String _nodeLabel, String _nodeName, String _userName) {
 
         this.buildId = _buildId;
         this.result = _result;
         this.jobName = _jobName;
+        this.buildClass = _buildClass;
         this.buildNumber = _buildNumber;
 
-        this.buildStartDate = (Calendar)_buildStartDate.clone();
-        this.buildExecuteDate = (Calendar)_buildExecuteDate.clone();
-        this.buildCompletedDate = (Calendar)_buildCompletedDate.clone();
+        this.buildStartDate = _buildStartDate;
+        this.buildExecuteDate = _buildExecuteDate;
+        this.buildCompletedDate = _buildCompletedDate;
 
-        this.overallDuration = _overallDuration;
-        this.executionDuration = _executionDuration;
+        this.duration = _duration;
+        this.queueDuration = _queueDuration;
 
         this.nodeLabel = _nodeLabel;
         setNodeName(_nodeName);
         this.userName = _userName;
     }
 
-    public Calendar getBuildStartDate() {
+    public long getBuildStartDate() {
         return this.buildStartDate;
     }
 
@@ -78,10 +85,22 @@ public class JobBuildResult {
         }
     }
 
+
+    /*
+     * the value 0 if the argument Date is equal to this Date; a value less than 0 if this Date is before the Date
+     * argument; and a value greater than 0 if this Date is after the Date argument.
+     */
     public static class ChronologicalComparator implements Comparator<JobBuildResult> {
 
         public int compare(JobBuildResult jbr1, JobBuildResult jbr2) {
-            return jbr1.buildStartDate.compareTo(jbr2.buildStartDate);
+
+            if (jbr1.buildStartDate == jbr2.buildStartDate) {
+                return 0;
+            } else if (jbr1.buildStartDate > jbr2.buildStartDate) {
+                return 1;
+            } else {
+                return -1;
+            }
         }
     }
 }

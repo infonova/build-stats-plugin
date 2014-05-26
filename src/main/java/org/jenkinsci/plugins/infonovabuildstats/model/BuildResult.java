@@ -2,6 +2,10 @@ package org.jenkinsci.plugins.infonovabuildstats.model;
 
 import org.jenkinsci.plugins.infonovabuildstats.Messages;
 
+/**
+ * Class holds the different build results and links them to generated messages file.
+ * 
+ */
 public enum BuildResult {
 
     SUCCESS((short)1) {

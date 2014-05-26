@@ -11,6 +11,12 @@ import org.jenkinsci.plugins.infonovabuildstats.model.BuildResult;
 import org.jenkinsci.plugins.infonovabuildstats.model.JobBuildResult;
 
 
+/**
+ * 
+ * Class produces {@link org.jenkinsci.plugins.infonovabuildstats.business.JobBuildResult} from given
+ * AbstractBuild.
+ * 
+ */
 public class JobBuildResultFactory {
 
     public static final JobBuildResultFactory INSTANCE = new JobBuildResultFactory();
@@ -18,27 +24,33 @@ public class JobBuildResultFactory {
     /** @see hudson.security.ACL#SYSTEM */
     private static final String SYSTEM_USERNAME = "SYSTEM";
 
+    /**
+     * 
+     * @param build - The build from which JobBuildResult is produced.
+     * @return JobBuildResult - Produced JobBuildResult
+     */
     public JobBuildResult createJobBuildResult(AbstractBuild build) {
 
         String buildName = build.getProject().getFullName();
 
         String nodeName = build.getBuiltOnStr();
 
-        long overallDuration = build.getDuration();
+        String buildClass = build.getClass().getSimpleName();
+
+        long duration = build.getDuration();
 
         /* build start date */
         Calendar startDate = build.getTimestamp();
-
-        /* build complete date */
-        Calendar completeDate = Calendar.getInstance();
-        completeDate.setTimeInMillis(startDate.getTimeInMillis() + overallDuration);
 
         /* build start date on executor */
         Calendar executionStartDate = Calendar.getInstance();
         executionStartDate.setTimeInMillis(build.getStartTimeInMillis());
 
-        /* duration of Job on the executor */
-        long executionDuration = completeDate.getTimeInMillis() - executionStartDate.getTimeInMillis();
+        long queueDuration = executionStartDate.getTimeInMillis() - startDate.getTimeInMillis();
+
+        /* build complete date */
+        Calendar completeDate = Calendar.getInstance();
+        completeDate.setTimeInMillis(build.getStartTimeInMillis() + duration);
 
         String nodeLabel = extractNodeLabels(build);
 
@@ -49,11 +61,16 @@ public class JobBuildResultFactory {
          * }
          */
 
-        return new JobBuildResult(build.getId(), createBuildResult(build.getResult()), buildName, build.getNumber(),
-            startDate, completeDate, executionStartDate, overallDuration, executionDuration, nodeLabel, nodeName,
-            extractUserNameIn(build));
+        return new JobBuildResult(build.getId(), createBuildResult(build.getResult()), buildName, buildClass, build
+            .getNumber(), startDate.getTimeInMillis(), completeDate.getTimeInMillis(), executionStartDate
+            .getTimeInMillis(), duration, queueDuration, nodeLabel, nodeName, extractUserNameIn(build));
     }
 
+    /**
+     * 
+     * @param result
+     * @return BuildResult
+     */
     public BuildResult createBuildResult(Result result) {
         if (Result.ABORTED.equals(result)) {
             return BuildResult.ABORTED;
@@ -85,6 +102,11 @@ public class JobBuildResultFactory {
         return userName;
     }
 
+    /**
+     * 
+     * @param build
+     * @return String - label of node without label "jobEnvProperties")
+     */
     public static String extractNodeLabels(AbstractBuild build) {
 
         Node node = build.getBuiltOn();
@@ -92,7 +114,12 @@ public class JobBuildResultFactory {
         if (node == null) {
             return "";
         } else {
-            return node.getLabelString().replaceAll(" jobEnvProperties", "");
+
+            // first delete jobEnvProperties Label
+            String label = node.getLabelString().replaceAll("jobEnvProperties", "");
+
+            // second remove all spaces
+            return label.replaceAll("\\s", "");
         }
     }
 }

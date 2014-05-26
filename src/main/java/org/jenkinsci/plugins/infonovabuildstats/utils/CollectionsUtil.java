@@ -6,7 +6,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-
+/**
+ * Simple helper class for collection operations
+ * 
+ */
 public class CollectionsUtil {
 
     public static <T> List<T> minus(List<T> initialList, List<T> elementsToRemove) {

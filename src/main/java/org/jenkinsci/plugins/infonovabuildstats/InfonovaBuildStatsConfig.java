@@ -7,6 +7,14 @@ import net.sf.json.JSONObject;
 
 import org.kohsuke.stapler.StaplerRequest;
 
+/**
+ * Holds the config for the infonova build stats plugin.
+ * Configuration in "Configure system" to enable or disable build stats collection.
+ * 
+ * @author davcem
+ * 
+ */
+
 @Extension
 public class InfonovaBuildStatsConfig extends GlobalConfiguration {
 

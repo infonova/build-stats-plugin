@@ -1,9 +1,7 @@
 package org.jenkinsci.plugins.infonovabuildstats.business;
 
-import hudson.model.TopLevelItem;
 import hudson.model.AbstractBuild;
 import hudson.model.AbstractProject;
-import hudson.model.Hudson;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -12,12 +10,19 @@ import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import jenkins.model.Jenkins;
+
 import org.jenkinsci.plugins.infonovabuildstats.JobBuildResultFactory;
 import org.jenkinsci.plugins.infonovabuildstats.InfonovaBuildStatsPlugin;
 import org.jenkinsci.plugins.infonovabuildstats.model.JobBuildResult;
 import org.jenkinsci.plugins.infonovabuildstats.utils.CollectionsUtil;
 
 
+/**
+ * Business layer for our plugin (reload plugin, collect build stats)
+ * 
+ * 
+ */
 public class InfonovaBuildStatsBusiness {
 
     private static final Logger LOGGER = Logger.getLogger(InfonovaBuildStatsBusiness.class.getName());
@@ -35,28 +40,15 @@ public class InfonovaBuildStatsBusiness {
 
     public void reloadPlugin() {
 
-        LOGGER.log(Level.INFO, "Call Pluginsaver reload Plugin");
+        LOGGER.log(Level.FINER, "Call Pluginsaver reload Plugin");
 
         this.pluginSaver.reloadPlugin();
 
-        LOGGER.log(Level.INFO, "Finished call Pluginsaver reload Plugin");
-
-
-        // If job results are empty, let's perform an initialization !
-        if (this.plugin.getJobBuildResults() == null || this.plugin.getJobBuildResults().size() == 0) {
-            try {
-
-                LOGGER.log(Level.INFO, "Job results empty or 0, so record build infos");
-
-                this.recordBuildInfos();
-            } catch (IOException e) {
-                LOGGER.log(Level.SEVERE, e.getMessage(), e);
-            }
-        }
+        LOGGER.log(Level.FINER, "Finished call Pluginsaver reload Plugin");
     }
 
     /**
-     * Records the result of a build.
+     * Records the result of actual completed build.
      */
     public void onJobCompleted(final AbstractBuild build) {
 
@@ -70,6 +62,11 @@ public class InfonovaBuildStatsBusiness {
         });
     }
 
+    /**
+     * Records results of past builds (all builds available in jenkins)
+     * 
+     * @throws IOException
+     */
     public void recordBuildInfos() throws IOException {
 
         this.pluginSaver.updatePlugin(new InfonovaBuildStatsPluginSaver.BeforeSavePluginCallback() {
@@ -78,15 +75,18 @@ public class InfonovaBuildStatsBusiness {
 
                 List<JobBuildResult> jobBuildResultsRead = new ArrayList<JobBuildResult>();
 
-                // TODO fix MatrixProject and use getAllJobs()
-                for (TopLevelItem item : Hudson.getInstance().getItems()) {
-                    LOGGER.log(Level.INFO, "Item " + item.getName() + " is of type: " + item.getClass());
-                    if (item instanceof AbstractProject) {
-                        addBuildsFrom(jobBuildResultsRead, (AbstractProject)item);
-                    }
+                List<AbstractProject> projects = new ArrayList<AbstractProject>();
+
+                projects = Jenkins.getInstance().getAllItems(AbstractProject.class);
+
+                LOGGER.log(Level.INFO, "Found projects: " + projects.size());
+
+                for (AbstractProject project : projects) {
+
+                    addBuildsFrom(jobBuildResultsRead, project);
                 }
 
-                LOGGER.log(Level.INFO, "Total read items: " + jobBuildResultsRead.size());
+                LOGGER.log(Level.INFO, "Read builds: " + jobBuildResultsRead.size());
 
                 plugin.getJobBuildResultsSharder().queueResultsToAdd(
                     CollectionsUtil.<JobBuildResult> minus(jobBuildResultsRead, plugin.getJobBuildResults()));
@@ -94,11 +94,15 @@ public class InfonovaBuildStatsBusiness {
         });
     }
 
+    /**
+     * 
+     * @param jobBuildResultsRead - List in which builds should be added
+     * @param project - From which builds should be added
+     */
     private static void addBuildsFrom(List<JobBuildResult> jobBuildResultsRead, AbstractProject project) {
         List<AbstractBuild> builds = project.getBuilds();
-        Iterator<AbstractBuild> buildIterator = builds.iterator();
 
-        LOGGER.log(Level.INFO, "Project: " + project.getName() + ", number builds: " + builds.size());
+        Iterator<AbstractBuild> buildIterator = builds.iterator();
 
         while (buildIterator.hasNext()) {
             addBuild(jobBuildResultsRead, buildIterator.next());

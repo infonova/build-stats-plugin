@@ -1,29 +1,89 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
-  <modelVersion>4.0.0</modelVersion>
-  <parent>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>org.jenkins-ci.plugins</groupId>
+        <artifactId>plugin</artifactId>
+        <version>1.554.1</version><!-- which version of Jenkins is this plugin built against? -->
+    </parent>
+
     <groupId>org.jenkins-ci.plugins</groupId>
-    <artifactId>plugin</artifactId>
-    <version>1.554.1</version><!-- which version of Jenkins is this plugin built against? -->
-  </parent>
+    <artifactId>infonova-build-stats</artifactId>
+    <version>1.0-SNAPSHOT</version>
+    <packaging>hpi</packaging>
 
-  <groupId>org.jenkins-ci.plugins</groupId>
-  <artifactId>infonova-build-stats</artifactId>
-  <version>0.1-SNAPSHOT</version>
-  <packaging>hpi</packaging>
+    <developers>
+        <developer>
+            <id>dcemernek</id>
+            <name>David Cemernek</name>
+            <email>david.cemernek@infonova.com</email>
+        </developer>
+    </developers>
 
-  <!-- get every artifact through repo.jenkins-ci.org, which proxies all the artifacts that we need -->
-  <repositories>
-    <repository>
-      <id>repo.jenkins-ci.org</id>
-      <url>http://repo.jenkins-ci.org/public/</url>
-    </repository>
-  </repositories>
+    <scm>
+        <connection>scm:svn:http://grzsvn01.infonova.at/ise/tools/jenkins/plugins/infonova-build-stats-plugin/trunk</connection>
+        <developerConnection>scm:svn:http://grzsvn01.infonova.at/ise/tools/jenkins/plugins/infonova-build-stats-plugin/trunk</developerConnection>
+        <url>http://grzsvn01.infonova.at/ise/tools/jenkins/plugins/infonova-build-stats-plugin/trunk</url>
+    </scm>
 
-  <pluginRepositories>
-    <pluginRepository>
-      <id>repo.jenkins-ci.org</id>
-      <url>http://repo.jenkins-ci.org/public/</url>
-    </pluginRepository>
-  </pluginRepositories>
+    <distributionManagement>
+        <repository>
+            <id>nexus-infonova</id>
+            <name>Nexus at Infonova</name>
+            <url>dav:http://grzmvn01.infonova.at:8082/nexus/content/repositories/ise-releases/</url>
+        </repository>
+        <snapshotRepository>
+            <id>nexus-infonova</id>
+            <name>Nexus at Infonova</name>
+            <url>dav:http://grzmvn01.infonova.at:8082/nexus/content/repositories/ise-snapshots/</url>
+            <uniqueVersion>false</uniqueVersion>
+        </snapshotRepository>
+    </distributionManagement>
 
+    <!-- get every artifact through repo.jenkins-ci.org, which proxies all the artifacts that we need -->
+    <repositories>
+        <repository>
+            <id>repo.jenkins-ci.org</id>
+            <url>http://repo.jenkins-ci.org/public/</url>
+        </repository>
+    </repositories>
+
+    <pluginRepositories>
+        <pluginRepository>
+            <id>repo.jenkins-ci.org</id>
+            <url>http://repo.jenkins-ci.org/public/</url>
+        </pluginRepository>
+    </pluginRepositories>
+
+    <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <maven-hpi-plugin.version>1.108</maven-hpi-plugin.version>
+        <target-jdk.version>1.6</target-jdk.version>
+    </properties>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.jenkins-ci.tools</groupId>
+                <artifactId>maven-hpi-plugin</artifactId>
+                <extensions>true</extensions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <configuration>
+                    <source>${target-jdk.version}</source>
+                    <target>${target-jdk.version}</target>
+                </configuration>
+            </plugin>
+        </plugins>
+
+        <extensions>
+            <extension>
+                <groupId>org.apache.maven.wagon</groupId>
+                <artifactId>wagon-webdav-jackrabbit</artifactId>
+                <version>2.4</version>
+            </extension>
+        </extensions>
+    </build>
 </project>

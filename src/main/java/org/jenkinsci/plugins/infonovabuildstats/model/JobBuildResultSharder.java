@@ -8,6 +8,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -21,14 +22,22 @@ import jenkins.model.Jenkins;
 import org.apache.commons.io.FileUtils;
 import org.jenkinsci.plugins.infonovabuildstats.utils.CollectionsUtil;
 
-
+/**
+ * Class assigns the build results to monthly files according to their job start date.
+ * 
+ */
 public class JobBuildResultSharder {
 
     private static final Logger LOGGER = Logger.getLogger(JobBuildResultSharder.class.getName());
 
+    /**
+     * Format if saved file
+     */
     private static final SimpleDateFormat JOB_RESULT_FILENAME_SDF = new SimpleDateFormat("'jobResults-'yyyy-MM'.xml'");
 
-    // Path, from jenkins_home, to infonova-build-stats folder
+    /**
+     * Path, from jenkins_home, to infonova-build-stats folder
+     */
     private static final String IBS_ROOT_PATH = "infonova-build-stats";
 
     /**
@@ -64,15 +73,18 @@ public class JobBuildResultSharder {
     }
 
     /**
-     * Transforming given JobBuildResult list into a map of type [filename of daily job result file => list of job
+     * Transforming given JobBuildResult list into a map of type [filename of monthly job result file => list of job
      * results]
      */
     private static Map<String, List<JobBuildResult>> toJobResultFilenameMap(List<JobBuildResult> results) {
         // Sharding job build results depending on monthly rolling files
         Map<String, List<JobBuildResult>> byMonthJobResults = new HashMap<String, List<JobBuildResult>>();
         for (JobBuildResult r : results) {
-            String targetFilename = JOB_RESULT_FILENAME_SDF.format(r.getBuildStartDate().getTime());
+            Calendar startDate = Calendar.getInstance();
+            startDate.setTimeInMillis(r.getBuildStartDate());
+            String targetFilename = JOB_RESULT_FILENAME_SDF.format(startDate.getTime());
             if (!byMonthJobResults.containsKey(targetFilename)) {
+                LOGGER.log(Level.FINER, "Filename (" + targetFilename + ") not contained, create new arrayList.");
                 byMonthJobResults.put(targetFilename, new ArrayList<JobBuildResult>());
             }
             byMonthJobResults.get(targetFilename).add(r);
@@ -99,33 +111,42 @@ public class JobBuildResultSharder {
         queuedResultsToAdd.add(result);
     }
 
+    /**
+     * Main method for writing build results to file which is called from
+     * {@link org.jenkinsci.plugins.infonovabuildstats.xstream.InfonovaBuildStatsXStreamConverter#marshal(Object, com.thoughtworks.xstream.io.HierarchicalStreamWriter, com.thoughtworks.xstream.converters.MarshallingContext)
+     * InfonovaBuildStatsXStreamConverter.marshal()}
+     */
     public void applyQueuedResultsInFiles() {
-        LOGGER.info("Starting persisting queueResultsToAdd.");
+        LOGGER.log(Level.FINE, "Starting persisting queueResultsToAdd.");
         // atomically move all the queued stuff into a local list
         List<JobBuildResult> resultsToAdd;
 
         synchronized (queuedResultsToAdd) {
             resultsToAdd = new ArrayList<JobBuildResult>(queuedResultsToAdd);
+
+            LOGGER.log(Level.FINE, "Size of queuedResultsToAdd: " + queuedResultsToAdd.size());
+
             queuedResultsToAdd.clear();
         }
 
         if (resultsToAdd.isEmpty()) {
-            LOGGER.info("No change detected in job results update queue!");
+            LOGGER.log(Level.INFO, "No change detected in job results update queue!");
             return;
         }
 
         File jobResultsRoot = getJobResultFolder();
 
-        LOGGER.log(Level.INFO, "Try to write changes to file: " + jobResultsRoot.toString());
+        LOGGER.log(Level.FINER, "Try to write changes to folder: " + jobResultsRoot.toString());
 
         if (!jobResultsRoot.exists()) {
             try {
-                LOGGER.log(Level.INFO, "Root not exists try to create.");
+                LOGGER.log(Level.FINE, "Root not exists try to create.");
 
                 FileUtils.forceMkdir(jobResultsRoot);
+
             } catch (IOException e) {
 
-                LOGGER.log(Level.INFO, "Not possible to create rootfolder: " + jobResultsRoot);
+                LOGGER.log(Level.WARNING, "Not possible to create rootfolder: " + jobResultsRoot);
 
                 throw new IllegalStateException("Can't create job results root directory : "
                     + jobResultsRoot.getAbsolutePath(), e);
@@ -142,29 +163,38 @@ public class JobBuildResultSharder {
         for (String filename : updatedFilenames) {
             String jobResultFilepath = jobResultsRoot + File.separator + filename;
 
-            LOGGER.info("Writing jobResults to file: " + jobResultFilepath);
+            LOGGER.log(Level.FINE, "Writing jobResults to file: " + jobResultFilepath);
 
             try {
-                FileWriter fw = new FileWriter(jobResultFilepath);
+                // If file exists we want to append
+                FileWriter fw = new FileWriter(jobResultFilepath, true);
                 Jenkins.XSTREAM.toXML(persistedMonthlyResults.get(filename), fw);
                 fw.close();
+
+                persistedMonthlyResults.get(filename).clear();
+
             } catch (IOException e) {
                 LOGGER.log(Level.SEVERE, "Unable to serialize job results into " + jobResultFilepath, e);
                 throw new IllegalStateException("Unable to serialize job results into " + jobResultFilepath, e);
             }
         }
-        LOGGER.info("Finished persisting queueResultsToAdd.");
+        LOGGER.log(Level.FINE, "Finished persisting queueResultsToAdd.");
     }
 
     private static File getJobResultFolder() {
         return new File(Jenkins.getInstance().getRootDir().getAbsolutePath() + File.separator + IBS_ROOT_PATH);
     }
 
+    /**
+     * Loads the collected job build results from file.
+     * 
+     * @return
+     */
     public static List<JobBuildResult> load() {
         List<JobBuildResult> jobBuildResults = new ArrayList<JobBuildResult>();
         File jobResultsRoot = getJobResultFolder();
 
-        LOGGER.log(Level.INFO, "jobResultsRoot: " + jobResultsRoot + " exists: " + jobResultsRoot.exists());
+        LOGGER.log(Level.FINER, "jobResultsRoot: " + jobResultsRoot + " exists: " + jobResultsRoot.exists());
 
         if (jobResultsRoot.exists()) {// if not exists, we have nothing to load
             for (File f : jobResultsRoot.listFiles()) {
@@ -174,7 +204,7 @@ public class JobBuildResultSharder {
                     jobBuildResults.addAll(jobResultsInFile);
                     fr.close();
                 } catch (IOException e) {
-                    LOGGER.log(Level.SEVERE, "Unable to read job results in " + f.getAbsolutePath(), e);
+                    LOGGER.log(Level.WARNING, "Unable to read job results in " + f.getAbsolutePath(), e);
                     throw new IllegalStateException("Unable to read job results in " + f.getAbsolutePath(), e);
                 }
             }

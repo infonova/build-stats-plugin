@@ -14,7 +14,12 @@ import com.thoughtworks.xstream.converters.UnmarshallingContext;
 import com.thoughtworks.xstream.io.HierarchicalStreamReader;
 import com.thoughtworks.xstream.io.HierarchicalStreamWriter;
 
-
+/**
+ * XStream Converter for the InfonovaBuildStatsPlugin.
+ * This converter is registered within
+ * {@link org.jenkinsci.plugins.infonovabuildstats.business.InfonovaBuildStatsPluginSaver#InfonovaBuildStatsPluginSaver(InfonovaBuildStatsPlugin)}
+ * 
+ */
 public class InfonovaBuildStatsXStreamConverter implements Converter {
 
     private static final Logger LOGGER = Logger.getLogger(InfonovaBuildStatsXStreamConverter.class.getName());
@@ -29,26 +34,26 @@ public class InfonovaBuildStatsXStreamConverter implements Converter {
     @Override
     public void marshal(Object source, HierarchicalStreamWriter writer, MarshallingContext context) {
 
-        LOGGER.info("Start marshalling plugin.");
+        LOGGER.log(Level.FINE, "Start marshalling plugin.");
 
         InfonovaBuildStatsPlugin plugin = (InfonovaBuildStatsPlugin)source;
 
         plugin.getJobBuildResultsSharder().applyQueuedResultsInFiles();
 
-        LOGGER.info("Finished marshalling plugin.");
+        LOGGER.log(Level.FINE, "Finished marshalling plugin.");
 
     }
 
     @Override
     public Object unmarshal(HierarchicalStreamReader reader, UnmarshallingContext context) {
 
-        LOGGER.info("Start unmarshalling plugin.");
+        LOGGER.log(Level.FINE, "Start unmarshalling plugin.");
 
         InfonovaBuildStatsPlugin plugin;
 
         if (context.currentObject() == null || !(context.currentObject() instanceof InfonovaBuildStatsPlugin)) {
             // This should never happen to get here
-            LOGGER.log(Level.INFO, "Plugin is created with NEW!!!");
+            LOGGER.log(Level.WARNING, "Plugin is created with NEW!!!");
 
             plugin = new InfonovaBuildStatsPlugin();
         } else {
@@ -58,15 +63,15 @@ public class InfonovaBuildStatsXStreamConverter implements Converter {
 
         /* Nothing great to do, only reload the jobBuildResults of the JobBuildResultsSharder (within the plugin) */
 
-        LOGGER.log(Level.INFO, "Load jobBuildResults from jobBuildResultsSharder.load.");
+        LOGGER.log(Level.FINE, "Load jobBuildResults from jobBuildResultsSharder.load.");
 
         List<JobBuildResult> jobBuildResults = JobBuildResultSharder.load();
 
-        LOGGER.log(Level.INFO, "loaded jobBuildResults: " + jobBuildResults.size());
+        LOGGER.log(Level.FINE, "loaded jobBuildResults: " + jobBuildResults.size());
 
         plugin.reloadJobBuildResults(jobBuildResults);
 
-        LOGGER.info("Finished unmarshalling plugin.");
+        LOGGER.log(Level.FINE, "Finished unmarshalling plugin.");
 
         return plugin;
     }
