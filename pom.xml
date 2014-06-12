@@ -20,8 +20,8 @@
     </developers>
 
     <scm>
-        <connection>scm:svn:http://grzsvn01.infonova.at/ise/tools/jenkins/plugins/infonova-build-stats-plugin/trunk</connection>
-        <developerConnection>scm:svn:http://grzsvn01.infonova.at/ise/tools/jenkins/plugins/infonova-build-stats-plugin/trunk</developerConnection>
+        <connection>scm:git:ssh://git.infonova.at:29418/jenkins/plugins/infonova-build-stats-plugin.git</connection>
+        <developerConnection>scm:git:ssh://git.infonova.at:29418/jenkins/plugins/infonova-build-stats-plugin.git</developerConnection>
         <url>http://grzsvn01.infonova.at/ise/tools/jenkins/plugins/infonova-build-stats-plugin/trunk</url>
     </scm>
 
