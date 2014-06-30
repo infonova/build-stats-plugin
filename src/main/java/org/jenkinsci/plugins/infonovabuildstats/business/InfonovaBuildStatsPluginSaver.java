@@ -20,7 +20,7 @@ import org.jenkinsci.plugins.infonovabuildstats.xstream.InfonovaBuildStatsXStrea
  * Class which is used for saving plugin state and builds.
  * Contains also the initialization of the XSTREAM config (used to write build stats to xml file)
  * and the registration of the XSTREAM converter see private method initializeXStream().
- * 
+ *
  */
 public class InfonovaBuildStatsPluginSaver {
 
@@ -43,7 +43,7 @@ public class InfonovaBuildStatsPluginSaver {
     }
 
     /**
-     * 
+     *
      */
     private void initializeXStream() {
         // registers the InfonovaBuildStatsXStreamConverter with XSTREAM
@@ -51,6 +51,7 @@ public class InfonovaBuildStatsPluginSaver {
 
         // XStream compacting aliases...
         Jenkins.XSTREAM.alias(InfonovaBuildStatsXStreamConverter.JOB_BUILD_RESULT_CLASS_ALIAS, JobBuildResult.class);
+        Jenkins.XSTREAM.alias("job-list", java.util.List.class);
 
         Jenkins.XSTREAM.aliasField("id", JobBuildResult.class, "buildId");
         Jenkins.XSTREAM.aliasField("name", JobBuildResult.class, "jobName");
@@ -96,7 +97,7 @@ public class InfonovaBuildStatsPluginSaver {
      * non-trivial, up to the order of minutes or more. So to prevent this from blocking executor threads
      * that execute this callback, we use {@linkplain #writer a separate thread} to asynchronously persist
      * them to the disk.
-     * 
+     *
      * @param callback
      */
     public void updatePlugin(BeforeSavePluginCallback callback) {

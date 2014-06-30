@@ -18,7 +18,7 @@ import com.thoughtworks.xstream.io.HierarchicalStreamWriter;
  * XStream Converter for the InfonovaBuildStatsPlugin.
  * This converter is registered within
  * {@link org.jenkinsci.plugins.infonovabuildstats.business.InfonovaBuildStatsPluginSaver#InfonovaBuildStatsPluginSaver(InfonovaBuildStatsPlugin)}
- * 
+ *
  */
 public class InfonovaBuildStatsXStreamConverter implements Converter {
 
@@ -38,7 +38,12 @@ public class InfonovaBuildStatsXStreamConverter implements Converter {
 
         InfonovaBuildStatsPlugin plugin = (InfonovaBuildStatsPlugin)source;
 
-        plugin.getJobBuildResultsSharder().applyQueuedResultsInFiles();
+        //only persist job build results to files, if we have pending changes
+        if(plugin.getJobBuildResultsSharder().pendingChanges()){
+
+        	plugin.getJobBuildResultsSharder().applyQueuedResultsInFiles();
+
+        }
 
         LOGGER.log(Level.FINE, "Finished marshalling plugin.");
 
@@ -47,7 +52,7 @@ public class InfonovaBuildStatsXStreamConverter implements Converter {
     @Override
     public Object unmarshal(HierarchicalStreamReader reader, UnmarshallingContext context) {
 
-        LOGGER.log(Level.FINE, "Start unmarshalling plugin.");
+        LOGGER.log(Level.FINER, "Start unmarshalling plugin.");
 
         InfonovaBuildStatsPlugin plugin;
 
@@ -61,9 +66,9 @@ public class InfonovaBuildStatsXStreamConverter implements Converter {
             plugin = (InfonovaBuildStatsPlugin)context.currentObject();
         }
 
-        /* Nothing great to do, only reload the jobBuildResults of the JobBuildResultsSharder (within the plugin) */
+        // TODO - Remove toogled out code
 
-        LOGGER.log(Level.FINE, "Load jobBuildResults from jobBuildResultsSharder.load.");
+        /* @Nothing to - do we dont need to reload the job results
 
         List<JobBuildResult> jobBuildResults = JobBuildResultSharder.load();
 
@@ -72,6 +77,8 @@ public class InfonovaBuildStatsXStreamConverter implements Converter {
         plugin.reloadJobBuildResults(jobBuildResults);
 
         LOGGER.log(Level.FINE, "Finished unmarshalling plugin.");
+
+        */
 
         return plugin;
     }

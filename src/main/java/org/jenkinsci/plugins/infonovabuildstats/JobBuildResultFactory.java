@@ -12,10 +12,10 @@ import org.jenkinsci.plugins.infonovabuildstats.model.JobBuildResult;
 
 
 /**
- * 
+ *
  * Class produces {@link org.jenkinsci.plugins.infonovabuildstats.business.JobBuildResult} from given
  * AbstractBuild.
- * 
+ *
  */
 public class JobBuildResultFactory {
 
@@ -25,7 +25,7 @@ public class JobBuildResultFactory {
     private static final String SYSTEM_USERNAME = "SYSTEM";
 
     /**
-     * 
+     *
      * @param build - The build from which JobBuildResult is produced.
      * @return JobBuildResult - Produced JobBuildResult
      */
@@ -46,28 +46,23 @@ public class JobBuildResultFactory {
         Calendar executionStartDate = Calendar.getInstance();
         executionStartDate.setTimeInMillis(build.getStartTimeInMillis());
 
+        /* queue duration of the job (difference of date when job was started and execution on
+         * executor was started*/
         long queueDuration = executionStartDate.getTimeInMillis() - startDate.getTimeInMillis();
 
         /* build complete date */
-        Calendar completeDate = Calendar.getInstance();
-        completeDate.setTimeInMillis(build.getStartTimeInMillis() + duration);
+        Calendar completedDate = Calendar.getInstance();
+        completedDate.setTimeInMillis(build.getStartTimeInMillis() + duration);
 
         String nodeLabel = extractNodeLabels(build);
 
-        /*
-         * Can't do that since MavenModuleSet is in maven-plugin artefact which is in test scope
-         * if(build.getProject() instanceof MavenModuleSet){
-         * buildName = ((MavenModuleSet)build.getProject()).getRootModule().toString();
-         * }
-         */
-
-        return new JobBuildResult(build.getId(), createBuildResult(build.getResult()), buildName, buildClass, build
-            .getNumber(), startDate.getTimeInMillis(), completeDate.getTimeInMillis(), executionStartDate
-            .getTimeInMillis(), duration, queueDuration, nodeLabel, nodeName, extractUserNameIn(build));
+        return new JobBuildResult(createBuildResult(build.getResult()), buildName, buildClass,
+        		build.getNumber(), startDate.getTime(), completedDate.getTime(), executionStartDate.getTime(),
+        		duration, queueDuration, nodeLabel, nodeName, extractUserNameIn(build));
     }
 
     /**
-     * 
+     *
      * @param result
      * @return BuildResult
      */
@@ -103,8 +98,9 @@ public class JobBuildResultFactory {
     }
 
     /**
-     * 
-     * @param build
+     *
+     * @param build - The build from which nodeLabel is extracted
+     *
      * @return String - label of node without label "jobEnvProperties")
      */
     public static String extractNodeLabels(AbstractBuild build) {

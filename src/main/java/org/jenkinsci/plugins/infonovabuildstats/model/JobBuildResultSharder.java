@@ -6,12 +6,14 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.ObjectOutputStream;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
@@ -24,7 +26,7 @@ import org.jenkinsci.plugins.infonovabuildstats.utils.CollectionsUtil;
 
 /**
  * Class assigns the build results to monthly files according to their job start date.
- * 
+ *
  */
 public class JobBuildResultSharder {
 
@@ -33,7 +35,7 @@ public class JobBuildResultSharder {
     /**
      * Format if saved file
      */
-    private static final SimpleDateFormat JOB_RESULT_FILENAME_SDF = new SimpleDateFormat("'jobResults-'yyyy-MM'.xml'");
+    private static final SimpleDateFormat JOB_RESULT_FILENAME_SDF = new SimpleDateFormat("'jobResults-'YYYY-MM-dd'.xml'");
 
     /**
      * Path, from jenkins_home, to infonova-build-stats folder
@@ -41,14 +43,12 @@ public class JobBuildResultSharder {
     private static final String IBS_ROOT_PATH = "infonova-build-stats";
 
     /**
-     * Effective persisted results list
-     */
-    private final List<JobBuildResult> persistedResults;
-    /**
      * Effective persisted results map
      * Note: persistedResults & persistedMonthlyResults are always coherent
-     */
-    private final Map<String, List<JobBuildResult>> persistedMonthlyResults;
+     *
+     * TODO Remove comment an variable persistedDailyResults
+
+    private final Map<String, List<JobBuildResult>> persistedDailyResults;*/
 
     /**
      * Hand-off queue from the event callback of
@@ -65,8 +65,8 @@ public class JobBuildResultSharder {
     }
 
     public JobBuildResultSharder(JobBuildResultSharder sharder, List<JobBuildResult> jobBuildResults) {
-        this.persistedResults = Collections.synchronizedList(jobBuildResults);
-        this.persistedMonthlyResults = Collections.synchronizedMap(toJobResultFilenameMap(jobBuildResults));
+        //TODO Remove toogled out line
+    	//this.persistedDailyResults = Collections.synchronizedMap(toJobResultFilenameMap(jobBuildResults));
         if (sharder != null) {
             this.queueResultsToAdd(sharder.queuedResultsToAdd);
         }
@@ -78,19 +78,20 @@ public class JobBuildResultSharder {
      */
     private static Map<String, List<JobBuildResult>> toJobResultFilenameMap(List<JobBuildResult> results) {
         // Sharding job build results depending on monthly rolling files
-        Map<String, List<JobBuildResult>> byMonthJobResults = new HashMap<String, List<JobBuildResult>>();
+        Map<String, List<JobBuildResult>> byDayJobResults = new HashMap<String, List<JobBuildResult>>();
         for (JobBuildResult r : results) {
-            Calendar startDate = Calendar.getInstance();
-            startDate.setTimeInMillis(r.getBuildStartDate());
-            String targetFilename = JOB_RESULT_FILENAME_SDF.format(startDate.getTime());
-            if (!byMonthJobResults.containsKey(targetFilename)) {
+            Calendar completedDate = Calendar.getInstance();
+            completedDate.setTime(r.getBuildCompletedDate());
+            String targetFilename = JOB_RESULT_FILENAME_SDF.format(completedDate.getTime());
+
+            if (!byDayJobResults.containsKey(targetFilename)) {
                 LOGGER.log(Level.FINER, "Filename (" + targetFilename + ") not contained, create new arrayList.");
-                byMonthJobResults.put(targetFilename, new ArrayList<JobBuildResult>());
+                byDayJobResults.put(targetFilename, new ArrayList<JobBuildResult>());
             }
-            byMonthJobResults.get(targetFilename).add(r);
+            byDayJobResults.get(targetFilename).add(r);
         }
 
-        return byMonthJobResults;
+        return byDayJobResults;
     }
 
     public void queueResultsToAdd(List<JobBuildResult> results) {
@@ -98,9 +99,7 @@ public class JobBuildResultSharder {
     }
 
     public List<JobBuildResult> getJobBuildResults() {
-        List<JobBuildResult> aggregatedList = new ArrayList<JobBuildResult>(this.persistedResults);
-        aggregatedList.addAll(queuedResultsToAdd);
-        return Collections.unmodifiableList(aggregatedList);
+        return Collections.unmodifiableList(queuedResultsToAdd);
     }
 
     public boolean pendingChanges() {
@@ -117,20 +116,20 @@ public class JobBuildResultSharder {
      * InfonovaBuildStatsXStreamConverter.marshal()}
      */
     public void applyQueuedResultsInFiles() {
-        LOGGER.log(Level.FINE, "Starting persisting queueResultsToAdd.");
+        LOGGER.log(Level.FINER, "Starting persisting queueResultsToAdd.");
         // atomically move all the queued stuff into a local list
         List<JobBuildResult> resultsToAdd;
 
         synchronized (queuedResultsToAdd) {
             resultsToAdd = new ArrayList<JobBuildResult>(queuedResultsToAdd);
 
-            LOGGER.log(Level.FINE, "Size of queuedResultsToAdd: " + queuedResultsToAdd.size());
+            LOGGER.log(Level.FINER, "Size of queuedResultsToAdd: " + resultsToAdd.size());
 
             queuedResultsToAdd.clear();
         }
 
         if (resultsToAdd.isEmpty()) {
-            LOGGER.log(Level.INFO, "No change detected in job results update queue!");
+            LOGGER.log(Level.INFO, "No changes detected in job results update queue!");
             return;
         }
 
@@ -140,7 +139,7 @@ public class JobBuildResultSharder {
 
         if (!jobResultsRoot.exists()) {
             try {
-                LOGGER.log(Level.FINE, "Root not exists try to create.");
+                LOGGER.log(Level.FINER, "Root not exists try to create.");
 
                 FileUtils.forceMkdir(jobResultsRoot);
 
@@ -153,32 +152,53 @@ public class JobBuildResultSharder {
             }
         }
 
-        // Persisting everything
-        addPersistedJobResults(resultsToAdd);
+        Map<String, List<JobBuildResult>> persistedDailyResults = toJobResultFilenameMap(resultsToAdd);
 
-        List<String> updatedFilenamesList = new ArrayList<String>(toJobResultFilenameMap(resultsToAdd).keySet());
+        List<String> updatedFilenamesList = new ArrayList<String>(persistedDailyResults.keySet());
 
         Collection<String> updatedFilenames = CollectionsUtil.toSet(updatedFilenamesList);
+
+        long start = System.currentTimeMillis();
 
         for (String filename : updatedFilenames) {
             String jobResultFilepath = jobResultsRoot + File.separator + filename;
 
-            LOGGER.log(Level.FINE, "Writing jobResults to file: " + jobResultFilepath);
+            LOGGER.log(Level.FINER, "Writing jobResults to file: " + jobResultFilepath);
 
             try {
-                // If file exists we want to append
-                FileWriter fw = new FileWriter(jobResultFilepath, true);
-                Jenkins.XSTREAM.toXML(persistedMonthlyResults.get(filename), fw);
+                // If file exists we want to append, if not exists this will work automatically
+            	FileWriter fw = new FileWriter(jobResultFilepath, true);
+
+            	/*INFO: Persisting took: 76
+            	 * for persisting whole list
+            	Jenkins.XSTREAM.toXML(persistedDailyResults.get(filename), fw);*/
+
+
+            	/*
+            	 * INFO: Persisting took: 76
+            	 * for persisting items of list
+            	 */
+
+            	List<JobBuildResult> daily = persistedDailyResults.get(filename);
+
+            	Iterator iter = daily.iterator();
+
+            	while(iter.hasNext()){
+
+            		Jenkins.XSTREAM.toXML((JobBuildResult) iter.next(), fw);
+            	}
+
                 fw.close();
 
-                persistedMonthlyResults.get(filename).clear();
-
-            } catch (IOException e) {
+            } catch (Exception e) {
                 LOGGER.log(Level.SEVERE, "Unable to serialize job results into " + jobResultFilepath, e);
                 throw new IllegalStateException("Unable to serialize job results into " + jobResultFilepath, e);
             }
         }
-        LOGGER.log(Level.FINE, "Finished persisting queueResultsToAdd.");
+
+        LOGGER.log(Level.FINE, "Persisting took: " + (System.currentTimeMillis() - start));
+
+        LOGGER.log(Level.FINER, "Finished persisting queueResultsToAdd.");
     }
 
     private static File getJobResultFolder() {
@@ -186,10 +206,14 @@ public class JobBuildResultSharder {
     }
 
     /**
-     * Loads the collected job build results from file.
-     * 
+     * TODO - Remove toogled out code
+     *
+     *
+     * Loads the collected job build results from file - Not used anymore because we don't need to reload
+     * the already persisted jobResults from files
+     *
      * @return
-     */
+
     public static List<JobBuildResult> load() {
         List<JobBuildResult> jobBuildResults = new ArrayList<JobBuildResult>();
         File jobResultsRoot = getJobResultFolder();
@@ -211,11 +235,5 @@ public class JobBuildResultSharder {
         }
         Collections.sort(jobBuildResults, new JobBuildResult.AntiChronologicalComparator());
         return jobBuildResults;
-    }
-
-    private synchronized void addPersistedJobResults(List<JobBuildResult> results) {
-        persistedResults.addAll(results);
-        Map<String, List<JobBuildResult>> filenameMap = toJobResultFilenameMap(results);
-        CollectionsUtil.mapMergeAdd(persistedMonthlyResults, filenameMap);
-    }
+    }*/
 }
