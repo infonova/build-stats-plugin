@@ -163,21 +163,22 @@ public class JobBuildResultSharder {
         for (String filename : updatedFilenames) {
             String jobResultFilepath = jobResultsRoot + File.separator + filename;
 
-            LOGGER.log(Level.FINER, "Writing jobResults to file: " + jobResultFilepath);
+            LOGGER.log(Level.FINE, "Writing jobResults to file: " + jobResultFilepath);
 
             try {
                 // If file exists we want to append, if not exists this will work automatically
             	FileWriter fw = new FileWriter(jobResultFilepath, true);
 
-            	/*INFO: Persisting took: 76
-            	 * for persisting whole list
+            	/*INFO: persisting whole list is a few milli seconds faster, but has
+            	 * a higher memory und cpu usage --> therefore persisting each item
+            	 * is the better way
+
             	Jenkins.XSTREAM.toXML(persistedDailyResults.get(filename), fw);*/
 
 
             	/*
-            	 * INFO: Persisting took: 76
-            	 * for persisting items of list
-            	 */
+            	 * INFO: persisting items of list*/
+
 
             	List<JobBuildResult> daily = persistedDailyResults.get(filename);
 
@@ -196,7 +197,7 @@ public class JobBuildResultSharder {
             }
         }
 
-        LOGGER.log(Level.FINE, "Persisting took: " + (System.currentTimeMillis() - start));
+        LOGGER.log(Level.INFO, "Persisting took: " + (System.currentTimeMillis() - start));
 
         LOGGER.log(Level.FINER, "Finished persisting queueResultsToAdd.");
     }
