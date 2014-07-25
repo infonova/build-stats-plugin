@@ -5,6 +5,8 @@ import hudson.util.DaemonThreadFactory;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Locale;
+import java.util.TimeZone;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.logging.Level;
@@ -15,6 +17,8 @@ import jenkins.model.Jenkins;
 import org.jenkinsci.plugins.infonovabuildstats.InfonovaBuildStatsPlugin;
 import org.jenkinsci.plugins.infonovabuildstats.model.JobBuildResult;
 import org.jenkinsci.plugins.infonovabuildstats.xstream.InfonovaBuildStatsXStreamConverter;
+
+import com.thoughtworks.xstream.converters.basic.DateConverter;
 
 /**
  * Class which is used for saving plugin state and builds.
@@ -48,6 +52,17 @@ public class InfonovaBuildStatsPluginSaver {
     private void initializeXStream() {
         // registers the InfonovaBuildStatsXStreamConverter with XSTREAM
         Jenkins.XSTREAM.registerConverter(new InfonovaBuildStatsXStreamConverter());
+
+        /*For the correct format of our dates we have to use a LocalConverter for the date fields*/
+        DateConverter dateConverter = new DateConverter(null, "yyyy-MM-dd HH:mm:ss.SSS", null,
+        		Locale.getDefault(), TimeZone.getDefault(), true);
+        Jenkins.XSTREAM.registerLocalConverter(org.jenkinsci.plugins.infonovabuildstats.model.JobBuildResult.class,
+        		"buildStartDate", dateConverter);
+        Jenkins.XSTREAM.registerLocalConverter(org.jenkinsci.plugins.infonovabuildstats.model.JobBuildResult.class,
+        		"buildExecuteDate", dateConverter);
+        Jenkins.XSTREAM.registerLocalConverter(org.jenkinsci.plugins.infonovabuildstats.model.JobBuildResult.class,
+        		"buildCompletedDate", dateConverter);
+
 
         // XStream compacting aliases...
         Jenkins.XSTREAM.alias(InfonovaBuildStatsXStreamConverter.JOB_BUILD_RESULT_CLASS_ALIAS, JobBuildResult.class);

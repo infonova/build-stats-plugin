@@ -5,6 +5,7 @@ import hudson.model.AbstractProject;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Iterator;
 import java.util.List;
 import java.util.logging.Level;
@@ -20,8 +21,8 @@ import org.jenkinsci.plugins.infonovabuildstats.utils.CollectionsUtil;
 
 /**
  * Business layer for our plugin (reload plugin, collect build stats)
- * 
- * 
+ *
+ *
  */
 public class InfonovaBuildStatsBusiness {
 
@@ -64,7 +65,7 @@ public class InfonovaBuildStatsBusiness {
 
     /**
      * Records results of past builds (all builds available in jenkins)
-     * 
+     *
      * @throws IOException
      */
     public void recordBuildInfos() throws IOException {
@@ -95,7 +96,7 @@ public class InfonovaBuildStatsBusiness {
     }
 
     /**
-     * 
+     *
      * @param jobBuildResultsRead - List in which builds should be added
      * @param project - From which builds should be added
      */

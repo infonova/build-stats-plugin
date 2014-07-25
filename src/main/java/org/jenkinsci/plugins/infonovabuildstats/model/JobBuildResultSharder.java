@@ -107,6 +107,7 @@ public class JobBuildResultSharder {
     }
 
     public void queueResultToAdd(JobBuildResult result) {
+
         queuedResultsToAdd.add(result);
     }
 
@@ -197,7 +198,7 @@ public class JobBuildResultSharder {
             }
         }
 
-        LOGGER.log(Level.INFO, "Persisting took: " + (System.currentTimeMillis() - start));
+        LOGGER.log(Level.FINE, "Persisting took: " + (System.currentTimeMillis() - start));
 
         LOGGER.log(Level.FINER, "Finished persisting queueResultsToAdd.");
     }
