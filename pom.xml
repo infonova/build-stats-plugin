@@ -21,7 +21,7 @@
 
     <scm>
         <connection>scm:git:ssh://git.infonova.at:29418/jenkins/plugins/infonova-build-stats-plugin.git</connection>
-        <developerConnection>scm:git:ssh://git.infonova.at:29418/jenkins/plugins/infonova-build-stats-plugin.git</developerConnection>
+        <developerConnection>scm:git:http://git.infonova.at:8080/gitblit/r/jenkins/plugins/infonova-build-stats-plugin.git</developerConnection>
         <url>http://grzsvn01.infonova.at/ise/tools/jenkins/plugins/infonova-build-stats-plugin/trunk</url>
     </scm>
 
