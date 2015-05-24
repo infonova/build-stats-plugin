@@ -46,9 +46,19 @@ public class JobBuildResultFactory {
         Calendar executionStartDate = Calendar.getInstance();
         executionStartDate.setTimeInMillis(build.getStartTimeInMillis());
 
-        /* queue duration of the job (difference of date when job was started and execution on
-         * executor was started*/
-        long queueDuration = executionStartDate.getTimeInMillis() - startDate.getTimeInMillis();
+        /*
+         * queue duration of the job (difference of date when job was started and execution on
+         * executor was started
+         * Note: sadly, the value calculated here, does not provide the real queue time
+         */
+        // long queueDurationOld = executionStartDate.getTimeInMillis() - startDate.getTimeInMillis();
+
+        /*
+          * this returns the real queue time, provided the executor is still alive.
+          * since the method is called upon "onCompleted" this is the case. however, when the method
+          * would be called at "onFinalized" the executor does not exist anymore.
+          */
+        long queueDuration = build.getExecutor() == null?-1:build.getExecutor().getTimeSpentInQueue();
 
         /* build complete date */
         Calendar completedDate = Calendar.getInstance();
