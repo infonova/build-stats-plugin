@@ -3,12 +3,18 @@ package org.jenkinsci.plugins.infonovabuildstats;
 import hudson.Extension;
 import hudson.Plugin;
 import hudson.model.ManagementLink;
+import hudson.model.Run;
 import hudson.model.TaskListener;
-import hudson.model.AbstractBuild;
 import hudson.model.listeners.ItemListener;
 import hudson.model.listeners.RunListener;
 import hudson.security.AccessDeniedException2;
 import hudson.security.Permission;
+import jenkins.model.GlobalConfiguration;
+import jenkins.model.Jenkins;
+import org.jenkinsci.plugins.infonovabuildstats.business.InfonovaBuildStatsBusiness;
+import org.jenkinsci.plugins.infonovabuildstats.model.JobBuildResult;
+import org.jenkinsci.plugins.infonovabuildstats.model.JobBuildResultSharder;
+import org.kohsuke.stapler.bind.JavaScriptMethod;
 
 import java.io.File;
 import java.io.IOException;
@@ -16,17 +22,9 @@ import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import jenkins.model.GlobalConfiguration;
-import jenkins.model.Jenkins;
-
-import org.jenkinsci.plugins.infonovabuildstats.business.InfonovaBuildStatsBusiness;
-import org.jenkinsci.plugins.infonovabuildstats.model.JobBuildResult;
-import org.jenkinsci.plugins.infonovabuildstats.model.JobBuildResultSharder;
-import org.kohsuke.stapler.bind.JavaScriptMethod;
-
 /**
  * Plugin collects builds stats in two ways:
- * - ongoing (see in method {@link GlobalBuildStatsRunListener#onCompleted(AbstractBuild, TaskListener) onCompleted} if
+ * - ongoing (see in method {GlobalBuildStatsRunListener#onCompleted(AbstractBuild, TaskListener) onCompleted} if
  * config is enabled (see in class {@link org.jenkinsci.plugins.infonovabuildstats.InfonovaBuildStatsConfig} <br>
  * - or through explicit data initialization via GUI {@link #generateBuildInfos()}
  * 
@@ -121,10 +119,10 @@ public class InfonovaBuildStatsPlugin extends Plugin {
      * 
      */
     @Extension
-    public static class InfonovaBuildStatsRunListener extends RunListener<AbstractBuild> {
+    public static class InfonovaBuildStatsRunListener extends RunListener {
 
         public InfonovaBuildStatsRunListener() {
-            super(AbstractBuild.class);
+            super(Run.class);
         }
 
 
@@ -134,7 +132,7 @@ public class InfonovaBuildStatsPlugin extends Plugin {
          * @param listener - Could be used to write log-messages into job
          */
         @Override
-        public void onCompleted(AbstractBuild r, TaskListener listener) {
+        public void onCompleted(Run r, TaskListener listener) {
 
             LOGGER.log(Level.FINER, "A job completed, should be logged? ");
 

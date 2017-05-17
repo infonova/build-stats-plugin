@@ -1,50 +1,55 @@
 package org.jenkinsci.plugins.infonovabuildstats;
 
-import hudson.model.Result;
-import hudson.model.AbstractBuild;
-import hudson.model.Cause;
-import hudson.model.Node;
-
-import java.util.Calendar;
-
+import hudson.model.*;
+import jenkins.model.Jenkins;
 import org.jenkinsci.plugins.infonovabuildstats.model.BuildResult;
 import org.jenkinsci.plugins.infonovabuildstats.model.JobBuildResult;
+import org.jenkinsci.plugins.mesos.MesosSlave;
+import org.jenkinsci.plugins.mesos.config.slavedefinitions.MesosSlaveInfo;
+
+import java.util.Calendar;
 
 
 /**
  *
- * Class produces {@link org.jenkinsci.plugins.infonovabuildstats.business.JobBuildResult} from given
+ * Class produces {@link org.jenkinsci.plugins.infonovabuildstats.model.JobBuildResult} from given
  * AbstractBuild.
  *
  */
 public class JobBuildResultFactory {
 
     public static final JobBuildResultFactory INSTANCE = new JobBuildResultFactory();
+    public static final Jenkins JENKINS = Jenkins.getInstance();
 
     /** @see hudson.security.ACL#SYSTEM */
     private static final String SYSTEM_USERNAME = "SYSTEM";
 
     /**
      *
-     * @param build - The build from which JobBuildResult is produced.
+     * @param run - The build from which JobBuildResult is produced.
      * @return JobBuildResult - Produced JobBuildResult
      */
-    public JobBuildResult createJobBuildResult(AbstractBuild build) {
+    public JobBuildResult createJobBuildResult(Run run) {
 
-        String buildName = build.getProject().getFullName();
+        String buildName = "";
+        String nodeName = "";
 
-        String nodeName = build.getBuiltOnStr();
+        if(run instanceof AbstractBuild) {
+            AbstractBuild abstractBuild = (AbstractBuild) run;
+            buildName = abstractBuild.getProject().getFullName();
+            nodeName = abstractBuild.getBuiltOnStr();
+        }
 
-        String buildClass = build.getClass().getSimpleName();
+        String buildClass = run.getClass().getSimpleName();
 
-        long duration = build.getDuration();
+        long duration = run.getDuration();
 
         /* build start date */
-        Calendar startDate = build.getTimestamp();
+        Calendar startDate = run.getTimestamp();
 
         /* build start date on executor */
         Calendar executionStartDate = Calendar.getInstance();
-        executionStartDate.setTimeInMillis(build.getStartTimeInMillis());
+        executionStartDate.setTimeInMillis(run.getStartTimeInMillis());
 
         /*
          * queue duration of the job (difference of date when job was started and execution on
@@ -52,29 +57,54 @@ public class JobBuildResultFactory {
          * Note: sadly, the value calculated here, does not provide the real queue time
          */
         // long queueDurationOld = executionStartDate.getTimeInMillis() - startDate.getTimeInMillis();
+        long queueDuration = -1;
+        int memory = 0;
+        float cpus = 0.0f;
+        String principal = "";
 
-        /*
-          * this returns the real queue time, provided the executor is still alive.
-          * since the method is called upon "onCompleted" this is the case. however, when the method
-          * would be called at "onFinalized" the executor does not exist anymore.
-          */
-        long queueDuration = build.getExecutor() == null?-1:build.getExecutor().getTimeSpentInQueue();
+        Executor executor = run.getExecutor();
 
+        if(executor != null) {
+            /*
+             * this returns the real queue time, provided the executor is still alive.
+             * since the method is called upon "onCompleted" this is the case. however, when the method
+             * would be called at "onFinalized" the executor does not exist anymore.
+             */
+            queueDuration = executor.getTimeSpentInQueue();
+
+            Computer computer = executor.getOwner();
+            if(computer != null) {
+                Node node = computer.getNode();
+                if (node instanceof MesosSlave) {
+                    MesosSlave mesosSlave = (MesosSlave) node;
+                    MesosSlaveInfo slaveInfo = mesosSlave.getSlaveInfo();
+
+                    if(slaveInfo != null) {
+                        int executorCount = mesosSlave.getNumExecutors();
+
+                        cpus = (float) ((slaveInfo.getExecutorCpus() * executorCount) + slaveInfo.getSlaveCpus());
+                        memory = (int) (((slaveInfo.getExecutorMem() * executorCount) + slaveInfo.getSlaveMem()) * 1.1); // 10% Overhead see mesos plugin
+                        principal = mesosSlave.getCloud().getPrincipal();
+                    }
+
+                }
+            }
+        }
         /* build complete date */
         Calendar completedDate = Calendar.getInstance();
-        completedDate.setTimeInMillis(build.getStartTimeInMillis() + duration);
+        completedDate.setTimeInMillis(run.getStartTimeInMillis() + duration);
 
-        String nodeLabel = extractNodeLabels(build);
+        String nodeLabel = extractNodeLabels(run);
 
-        return new JobBuildResult(createBuildResult(build.getResult()), buildName, buildClass,
-        		build.getNumber(), startDate.getTime(), completedDate.getTime(), executionStartDate.getTime(),
-        		duration, queueDuration, nodeLabel, nodeName, extractUserNameIn(build));
+        return new JobBuildResult(createBuildResult(run.getResult()), buildName, buildClass,
+                run.getNumber(), startDate.getTime(), completedDate.getTime(), executionStartDate.getTime(),
+        		duration, queueDuration, nodeLabel, nodeName, extractUserNameIn(run), memory, cpus, principal, JENKINS.getRootUrl()  );
     }
 
     /**
      *
-     * @param result
-     * @return BuildResult
+     * @param result - A Jenkins builds result
+     * @return BuildResult - The matching enum to the @param result
      */
     public BuildResult createBuildResult(Result result) {
         if (Result.ABORTED.equals(result)) {
@@ -90,11 +120,15 @@ public class JobBuildResultFactory {
         }
     }
 
-    public static String extractUserNameIn(AbstractBuild<?, ?> build) {
+    public static String extractUserNameIn(Run run) {
         String userName;
-        @SuppressWarnings("deprecation")
-        Cause.UserCause uc = build.getCause(Cause.UserCause.class);
-        Cause.UserIdCause uic = build.getCause(Cause.UserIdCause.class);
+
+        Cause.UserCause uc = null;
+        Cause.UserIdCause uic = null;
+
+        uc = (Cause.UserCause) run.getCause(Cause.UserCause.class);
+        uic = (Cause.UserIdCause) run.getCause(Cause.UserIdCause.class);
+
         if (uc != null) {
             userName = uc.getUserName();
         } else if (uic != null) {
@@ -113,9 +147,13 @@ public class JobBuildResultFactory {
      *
      * @return String - label of node without label "jobEnvProperties")
      */
-    public static String extractNodeLabels(AbstractBuild build) {
+    public static String extractNodeLabels(Run build) {
 
-        Node node = build.getBuiltOn();
+        Node node = null;
+
+        if(build.getExecutor() != null && build.getExecutor().getOwner()!= null && build.getExecutor().getOwner().getNode() != null) {
+            node = build.getExecutor().getOwner().getNode();
+        }
 
         if (node == null) {
             return "";

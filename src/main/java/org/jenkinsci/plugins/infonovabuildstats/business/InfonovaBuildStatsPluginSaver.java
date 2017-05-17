@@ -1,7 +1,12 @@
 package org.jenkinsci.plugins.infonovabuildstats.business;
 
+import com.thoughtworks.xstream.converters.basic.DateConverter;
 import hudson.BulkChange;
 import hudson.util.DaemonThreadFactory;
+import jenkins.model.Jenkins;
+import org.jenkinsci.plugins.infonovabuildstats.InfonovaBuildStatsPlugin;
+import org.jenkinsci.plugins.infonovabuildstats.model.JobBuildResult;
+import org.jenkinsci.plugins.infonovabuildstats.xstream.InfonovaBuildStatsXStreamConverter;
 
 import java.io.File;
 import java.io.IOException;
@@ -11,14 +16,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-
-import jenkins.model.Jenkins;
-
-import org.jenkinsci.plugins.infonovabuildstats.InfonovaBuildStatsPlugin;
-import org.jenkinsci.plugins.infonovabuildstats.model.JobBuildResult;
-import org.jenkinsci.plugins.infonovabuildstats.xstream.InfonovaBuildStatsXStreamConverter;
-
-import com.thoughtworks.xstream.converters.basic.DateConverter;
 
 /**
  * Class which is used for saving plugin state and builds.
@@ -81,6 +78,11 @@ public class InfonovaBuildStatsPluginSaver {
         Jenkins.XSTREAM.aliasField("nodeLabel", JobBuildResult.class, "nodeLabel");
         Jenkins.XSTREAM.aliasField("nodeName", JobBuildResult.class, "nodeName");
         Jenkins.XSTREAM.aliasField("userName", JobBuildResult.class, "userName");
+        Jenkins.XSTREAM.aliasField("cpus", JobBuildResult.class, "cpus");
+        Jenkins.XSTREAM.aliasField("memory", JobBuildResult.class, "memory");
+        Jenkins.XSTREAM.aliasField("principal", JobBuildResult.class, "principal");
+        Jenkins.XSTREAM.aliasField("project", JobBuildResult.class, "project");
+        Jenkins.XSTREAM.aliasField("jenkinsUrl", JobBuildResult.class, "jenkinsUrl");
     }
 
     public static abstract class BeforeSavePluginCallback {
@@ -113,7 +115,7 @@ public class InfonovaBuildStatsPluginSaver {
      * that execute this callback, we use {@linkplain #writer a separate thread} to asynchronously persist
      * them to the disk.
      *
-     * @param callback
+     * @param callback BeforeSavePluginCallback
      */
     public void updatePlugin(BeforeSavePluginCallback callback) {
 

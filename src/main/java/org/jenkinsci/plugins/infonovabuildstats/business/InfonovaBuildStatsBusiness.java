@@ -2,21 +2,19 @@ package org.jenkinsci.plugins.infonovabuildstats.business;
 
 import hudson.model.AbstractBuild;
 import hudson.model.AbstractProject;
+import hudson.model.Run;
+import jenkins.model.Jenkins;
+import org.jenkinsci.plugins.infonovabuildstats.InfonovaBuildStatsPlugin;
+import org.jenkinsci.plugins.infonovabuildstats.JobBuildResultFactory;
+import org.jenkinsci.plugins.infonovabuildstats.model.JobBuildResult;
+import org.jenkinsci.plugins.infonovabuildstats.utils.CollectionsUtil;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.Iterator;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-
-import jenkins.model.Jenkins;
-
-import org.jenkinsci.plugins.infonovabuildstats.JobBuildResultFactory;
-import org.jenkinsci.plugins.infonovabuildstats.InfonovaBuildStatsPlugin;
-import org.jenkinsci.plugins.infonovabuildstats.model.JobBuildResult;
-import org.jenkinsci.plugins.infonovabuildstats.utils.CollectionsUtil;
 
 
 /**
@@ -50,15 +48,16 @@ public class InfonovaBuildStatsBusiness {
 
     /**
      * Records the result of actual completed build.
+     * @param run The completed Run
      */
-    public void onJobCompleted(final AbstractBuild build) {
+    public void onJobCompleted(final Run run) {
 
         this.pluginSaver.updatePlugin(new InfonovaBuildStatsPluginSaver.BeforeSavePluginCallback() {
 
             public void changePluginStateBeforeSavingIt(InfonovaBuildStatsPlugin plugin) {
 
                 plugin.getJobBuildResultsSharder().queueResultToAdd(
-                    JobBuildResultFactory.INSTANCE.createJobBuildResult(build));
+                    JobBuildResultFactory.INSTANCE.createJobBuildResult(run));
             }
         });
     }
@@ -66,7 +65,7 @@ public class InfonovaBuildStatsBusiness {
     /**
      * Records results of past builds (all builds available in jenkins)
      *
-     * @throws IOException
+     * @throws IOException can occur
      */
     public void recordBuildInfos() throws IOException {
 

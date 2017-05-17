@@ -61,6 +61,14 @@
         <target-jdk.version>1.6</target-jdk.version>
     </properties>
 
+    <dependencies>
+        <dependency>
+            <artifactId>mesos</artifactId>
+            <groupId>org.jenkins-ci.plugins</groupId>
+            <version>0.9.0-INFONOVA-14</version>
+        </dependency>
+    </dependencies>
+
     <build>
         <plugins>
             <plugin>

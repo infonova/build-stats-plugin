@@ -44,9 +44,19 @@ public class JobBuildResult {
 
     private String userName = null;
 
+    private int memory = 0;
+
+    private float cpus = 0.0f;
+
+    private String principal = "";
+
+    private String project = "";
+
+    private String jenkinsUrl = "";
+
     public JobBuildResult(BuildResult _result, String _jobName, String _buildClass, int _buildNumber,
     		Date _buildStartDate, Date _buildCompletedDate, Date _buildExecuteDate, long _duration,
-            long _queueDuration, String _nodeLabel, String _nodeName, String _userName) {
+            long _queueDuration, String _nodeLabel, String _nodeName, String _userName, int _memory, float _cpus, String _principal, String _jenkinsUrl) {
 
     	this.result = _result;
         this.jobName = _jobName;
@@ -64,7 +74,23 @@ public class JobBuildResult {
         setNodeName(_nodeName);
         this.userName = _userName;
 
-    	this.buildId = this.getGeneratedId();
+    	this.cpus = _cpus;
+    	this.memory = _memory;
+
+    	this.principal = _principal;
+
+    	if(jobName != null) {
+
+    	    String[] splittedJobName = jobName.split("/");
+    	    if(splittedJobName.length > 1){
+                this.project = splittedJobName[0]; //Foldername is is the project
+            } else {
+                this.project = _principal; //..or if Job is not in an Folder, the principal is the project.
+            }
+        }
+
+        this.buildId = this.getGeneratedId();
+    	this.jenkinsUrl = _jenkinsUrl;
     }
 
     public Date getBuildStartDate() {
