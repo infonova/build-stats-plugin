@@ -1,7 +1,12 @@
 package org.jenkinsci.plugins.infonovabuildstats.business;
 
+import com.thoughtworks.xstream.converters.basic.DateConverter;
 import hudson.BulkChange;
 import hudson.util.DaemonThreadFactory;
+import jenkins.model.Jenkins;
+import org.jenkinsci.plugins.infonovabuildstats.InfonovaBuildStatsPlugin;
+import org.jenkinsci.plugins.infonovabuildstats.model.AgentStatistic;
+import org.jenkinsci.plugins.infonovabuildstats.xstream.InfonovaBuildStatsXStreamConverter;
 
 import java.io.File;
 import java.io.IOException;
@@ -11,14 +16,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-
-import jenkins.model.Jenkins;
-
-import org.jenkinsci.plugins.infonovabuildstats.InfonovaBuildStatsPlugin;
-import org.jenkinsci.plugins.infonovabuildstats.model.JobBuildResult;
-import org.jenkinsci.plugins.infonovabuildstats.xstream.InfonovaBuildStatsXStreamConverter;
-
-import com.thoughtworks.xstream.converters.basic.DateConverter;
 
 /**
  * Class which is used for saving plugin state and builds.
@@ -33,7 +30,6 @@ public class InfonovaBuildStatsPluginSaver {
     private InfonovaBuildStatsPlugin plugin;
 
     /**
-     * See {@link #updatePlugin(BeforeSavePluginCallback)} <br>
      * Use of a size 1 thread pool frees us from worring about
      * accidental thread death.
      */
@@ -56,31 +52,28 @@ public class InfonovaBuildStatsPluginSaver {
         /*For the correct format of our dates we have to use a LocalConverter for the date fields*/
         DateConverter dateConverter = new DateConverter(null, "yyyy-MM-dd HH:mm:ss.SSS", null,
         		Locale.getDefault(), TimeZone.getDefault(), true);
-        Jenkins.XSTREAM.registerLocalConverter(org.jenkinsci.plugins.infonovabuildstats.model.JobBuildResult.class,
-        		"buildStartDate", dateConverter);
-        Jenkins.XSTREAM.registerLocalConverter(org.jenkinsci.plugins.infonovabuildstats.model.JobBuildResult.class,
-        		"buildExecuteDate", dateConverter);
-        Jenkins.XSTREAM.registerLocalConverter(org.jenkinsci.plugins.infonovabuildstats.model.JobBuildResult.class,
-        		"buildCompletedDate", dateConverter);
-
+        Jenkins.XSTREAM.registerLocalConverter(AgentStatistic.class,
+        		"onlineDate", dateConverter);
+        Jenkins.XSTREAM.registerLocalConverter(AgentStatistic.class,
+        		"offlineDate", dateConverter);
 
         // XStream compacting aliases...
-        Jenkins.XSTREAM.alias(InfonovaBuildStatsXStreamConverter.JOB_BUILD_RESULT_CLASS_ALIAS, JobBuildResult.class);
-        Jenkins.XSTREAM.alias("job-list", java.util.List.class);
+        Jenkins.XSTREAM.alias(InfonovaBuildStatsXStreamConverter.JOB_BUILD_RESULT_CLASS_ALIAS, AgentStatistic.class);
+        Jenkins.XSTREAM.alias("agent-list", java.util.List.class);
 
-        Jenkins.XSTREAM.aliasField("id", JobBuildResult.class, "buildId");
-        Jenkins.XSTREAM.aliasField("name", JobBuildResult.class, "jobName");
-        Jenkins.XSTREAM.aliasField("class", JobBuildResult.class, "buildClass");
-        Jenkins.XSTREAM.aliasField("number", JobBuildResult.class, "buildNumber");
-        Jenkins.XSTREAM.aliasField("result", JobBuildResult.class, "result");
-        Jenkins.XSTREAM.aliasField("startDate", JobBuildResult.class, "buildStartDate");
-        Jenkins.XSTREAM.aliasField("executionDate", JobBuildResult.class, "buildExecuteDate");
-        Jenkins.XSTREAM.aliasField("completionDate", JobBuildResult.class, "buildCompletedDate");
-        Jenkins.XSTREAM.aliasField("duration", JobBuildResult.class, "duration");
-        Jenkins.XSTREAM.aliasField("queueDuration", JobBuildResult.class, "queueDuration");
-        Jenkins.XSTREAM.aliasField("nodeLabel", JobBuildResult.class, "nodeLabel");
-        Jenkins.XSTREAM.aliasField("nodeName", JobBuildResult.class, "nodeName");
-        Jenkins.XSTREAM.aliasField("userName", JobBuildResult.class, "userName");
+        Jenkins.XSTREAM.aliasField("lastJobName", AgentStatistic.class, "lastJobName");
+        Jenkins.XSTREAM.aliasField("agentLabel", AgentStatistic.class, "agentLabel");
+        Jenkins.XSTREAM.aliasField("agentName", AgentStatistic.class, "agentName");
+        Jenkins.XSTREAM.aliasField("onlineDate", AgentStatistic.class, "onlineDate");
+        Jenkins.XSTREAM.aliasField("offlineDate", AgentStatistic.class, "offlineDate");
+        Jenkins.XSTREAM.aliasField("onlineTimeMillis", AgentStatistic.class, "onlineTimeMillis");
+        Jenkins.XSTREAM.aliasField("mesosAgent", AgentStatistic.class, "mesosAgent");
+        Jenkins.XSTREAM.aliasField("memory", AgentStatistic.class, "memory");
+        Jenkins.XSTREAM.aliasField("cpus", AgentStatistic.class, "cpus");
+        Jenkins.XSTREAM.aliasField("principal", AgentStatistic.class, "principal");
+        Jenkins.XSTREAM.aliasField("framework", AgentStatistic.class, "framework");
+        Jenkins.XSTREAM.aliasField("project", AgentStatistic.class, "project");
+        Jenkins.XSTREAM.aliasField("jenkinsUrl", AgentStatistic.class, "jenkinsUrl");
     }
 
     public static abstract class BeforeSavePluginCallback {

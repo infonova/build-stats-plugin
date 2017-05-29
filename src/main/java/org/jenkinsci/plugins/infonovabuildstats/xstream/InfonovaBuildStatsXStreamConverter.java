@@ -1,12 +1,9 @@
 package org.jenkinsci.plugins.infonovabuildstats.xstream;
 
-import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.jenkinsci.plugins.infonovabuildstats.InfonovaBuildStatsPlugin;
-import org.jenkinsci.plugins.infonovabuildstats.model.JobBuildResult;
-import org.jenkinsci.plugins.infonovabuildstats.model.JobBuildResultSharder;
 
 import com.thoughtworks.xstream.converters.Converter;
 import com.thoughtworks.xstream.converters.MarshallingContext;
@@ -65,20 +62,6 @@ public class InfonovaBuildStatsXStreamConverter implements Converter {
             // Retrieving already instantiated GlobalBuildStats plugin into current context ..
             plugin = (InfonovaBuildStatsPlugin)context.currentObject();
         }
-
-        // TODO - Remove toogled out code
-
-        /* @Nothing to - do we dont need to reload the job results
-
-        List<JobBuildResult> jobBuildResults = JobBuildResultSharder.load();
-
-        LOGGER.log(Level.FINE, "loaded jobBuildResults: " + jobBuildResults.size());
-
-        plugin.reloadJobBuildResults(jobBuildResults);
-
-        LOGGER.log(Level.FINE, "Finished unmarshalling plugin.");
-
-        */
 
         return plugin;
     }

@@ -1,8 +1,8 @@
 <?jelly escape-by-default='true'?>
 <j:jelly xmlns:j="jelly:core" xmlns:f="/lib/form">
   <f:section title="Infonova collect build stats">
-    <f:entry title="Collect job data" field="collectBuildStats"
-      description="Check if we should collect job data or not">
+    <f:entry title="Collect agent data" field="collectBuildStats"
+      description="Check if we should collect agent data or not">
       <f:checkbox />
     </f:entry>
   </f:section>
