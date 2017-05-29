@@ -4,7 +4,6 @@ import hudson.Extension;
 import hudson.model.Descriptor;
 import jenkins.model.GlobalConfiguration;
 import net.sf.json.JSONObject;
-
 import org.kohsuke.stapler.StaplerRequest;
 
 /**
