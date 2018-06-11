@@ -30,7 +30,7 @@ public class InfonovaBuildStatsPlugin extends Plugin {
 
     transient private final InfonovaBuildStatsBusiness business = new InfonovaBuildStatsBusiness(this);
 
-    private JobBuildResultSharder jobBuildResultsSharder = new JobBuildResultSharder();
+    private final JobBuildResultSharder jobBuildResultsSharder = new JobBuildResultSharder();
 
     /**
      * Highered visibility of load method
@@ -54,7 +54,7 @@ public class InfonovaBuildStatsPlugin extends Plugin {
      */
 
     public static InfonovaBuildStatsPlugin getInstance() {
-        return Jenkins.getInstance().getPlugin(InfonovaBuildStatsPlugin.class);
+        return Jenkins.get().getPlugin(InfonovaBuildStatsPlugin.class);
     }
 
     /**
@@ -109,10 +109,10 @@ public class InfonovaBuildStatsPlugin extends Plugin {
         @Inject
         private InfonovaBuildStatsConfig config;
 
-        private Map<String, AgentStatistic> agentStatisticMap = Collections.synchronizedMap(new HashMap<String, AgentStatistic>());
+        private final Map<String, AgentStatistic> agentStatisticMap = Collections.synchronizedMap(new HashMap<>());
 
         @Override
-        public void onOnline(Computer c, TaskListener listener) throws IOException, InterruptedException {
+        public void onOnline(Computer c, TaskListener listener) {
             String displayName = c.getDisplayName();
 
             try {

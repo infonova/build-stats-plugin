@@ -40,10 +40,10 @@ public class JobBuildResultSharder {
      * thread that's adding the records. Access needs to be synchronized.
      */
     private final List<AgentStatistic> queuedResultsToAdd = Collections
-        .synchronizedList(new ArrayList<AgentStatistic>());
+        .synchronizedList(new ArrayList<>());
 
     public JobBuildResultSharder() {
-        this(null, new ArrayList<AgentStatistic>());
+        this(null, new ArrayList<>());
     }
 
     public JobBuildResultSharder(JobBuildResultSharder sharder, List<AgentStatistic> agentStatistics) {
@@ -60,7 +60,7 @@ public class JobBuildResultSharder {
      */
     private static Map<String, List<AgentStatistic>> toJobResultFilenameMap(List<AgentStatistic> results) {
         // Sharding job build results depending on monthly rolling files
-        Map<String, List<AgentStatistic>> byDayJobResults = new HashMap<String, List<AgentStatistic>>();
+        Map<String, List<AgentStatistic>> byDayJobResults = new HashMap<>();
         for (AgentStatistic r : results) {
             Calendar completedDate = Calendar.getInstance();
             completedDate.setTime(r.getOfflineDate());
@@ -69,7 +69,7 @@ public class JobBuildResultSharder {
 
             if (!byDayJobResults.containsKey(targetFilename)) {
                 LOGGER.log(Level.FINER, "Filename (" + targetFilename + ") not contained, create new arrayList.");
-                byDayJobResults.put(targetFilename, new ArrayList<AgentStatistic>());
+                byDayJobResults.put(targetFilename, new ArrayList<>());
             }
             byDayJobResults.get(targetFilename).add(r);
         }
@@ -104,7 +104,7 @@ public class JobBuildResultSharder {
         List<AgentStatistic> resultsToAdd;
 
         synchronized (queuedResultsToAdd) {
-            resultsToAdd = new ArrayList<AgentStatistic>(queuedResultsToAdd);
+            resultsToAdd = new ArrayList<>(queuedResultsToAdd);
 
             LOGGER.log(Level.FINER, "Size of queuedResultsToAdd: " + resultsToAdd.size());
 
@@ -137,7 +137,7 @@ public class JobBuildResultSharder {
 
         Map<String, List<AgentStatistic>> persistedDailyResults = toJobResultFilenameMap(resultsToAdd);
 
-        List<String> updatedFilenamesList = new ArrayList<String>(persistedDailyResults.keySet());
+        List<String> updatedFilenamesList = new ArrayList<>(persistedDailyResults.keySet());
 
         Collection<String> updatedFilenames = CollectionsUtil.toSet(updatedFilenamesList);
 
@@ -153,10 +153,8 @@ public class JobBuildResultSharder {
                 // If file exists we want to append, if not exists this will work automatically
                 List<AgentStatistic> daily = persistedDailyResults.get(filename);
 
-                Iterator iter = daily.iterator();
-
-                while (iter.hasNext()) {
-                    Jenkins.XSTREAM.toXML(iter.next(), fw);
+                for (AgentStatistic statisticEntry : daily) {
+                    Jenkins.XSTREAM.toXML(statisticEntry, fw);
                 }
             } catch (Exception e) {
                 LOGGER.log(Level.SEVERE, "Unable to serialize job results into " + jobResultFilepath, e);
@@ -170,6 +168,6 @@ public class JobBuildResultSharder {
     }
 
     private static File getJobResultFolder() {
-        return new File(Jenkins.getInstance().getRootDir().getAbsolutePath() + File.separator + IBS_ROOT_PATH);
+        return new File(Jenkins.get().getRootDir().getAbsolutePath() + File.separator + IBS_ROOT_PATH);
     }
 }

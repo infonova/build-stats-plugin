@@ -27,7 +27,7 @@ public class InfonovaBuildStatsPluginSaver {
 
     private static final Logger LOGGER = Logger.getLogger(InfonovaBuildStatsPluginSaver.class.getName());
 
-    private InfonovaBuildStatsPlugin plugin;
+    private final InfonovaBuildStatsPlugin plugin;
 
     /**
      * Use of a size 1 thread pool frees us from worring about
@@ -106,7 +106,7 @@ public class InfonovaBuildStatsPluginSaver {
      * that execute this callback, we use {@linkplain #writer a separate thread} to asynchronously persist
      * them to the disk.
      *
-     * @param callback
+     * @param callback Callback before plugin gets saved
      */
     public void updatePlugin(BeforeSavePluginCallback callback) {
 
@@ -114,32 +114,29 @@ public class InfonovaBuildStatsPluginSaver {
 
         LOGGER.log(Level.FINER, "Infonova build stats - updatePlugin!");
 
-        writer.submit(new Runnable() {
+        writer.submit(() -> {
 
-            public void run() {
+            // Persist everything
+            try {
 
-                // Persist everything
-                try {
+                if (!plugin.getJobBuildResultsSharder().pendingChanges()) {
 
-                    if (!plugin.getJobBuildResultsSharder().pendingChanges()) {
+                    LOGGER.log(Level.FINER, "No change detected in update queue no update required !");
 
-                        LOGGER.log(Level.FINER, "No change detected in update queue no update required !");
-
-                        return;
-                    }
-
-                    LOGGER.log(Level.FINER, "We have changes, save plugin");
-
-                    if (BulkChange.contains(plugin)) {
-                        LOGGER.log(Level.FINER, "...but bulkChange contains plugins...");
-                    }
-
-                    plugin.save();
-
-                    LOGGER.log(Level.FINER, "Changes applied and file saved !");
-                } catch (IOException e) {
-                    LOGGER.log(Level.WARNING, "Failed to persist global build stat records", e);
+                    return;
                 }
+
+                LOGGER.log(Level.FINER, "We have changes, save plugin");
+
+                if (BulkChange.contains(plugin)) {
+                    LOGGER.log(Level.FINER, "...but bulkChange contains plugins...");
+                }
+
+                plugin.save();
+
+                LOGGER.log(Level.FINER, "Changes applied and file saved !");
+            } catch (IOException e) {
+                LOGGER.log(Level.WARNING, "Failed to persist global build stat records", e);
             }
         });
     }

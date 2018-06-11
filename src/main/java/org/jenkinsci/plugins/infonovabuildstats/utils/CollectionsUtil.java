@@ -9,7 +9,7 @@ import java.util.*;
 public class CollectionsUtil {
 
     public static <T> List<T> minus(List<T> initialList, List<T> elementsToRemove) {
-        List<T> minusedList = new ArrayList<T>(initialList);
+        List<T> minusedList = new ArrayList<>(initialList);
         minusedList.removeAll(elementsToRemove);
         return minusedList;
     }
@@ -17,20 +17,14 @@ public class CollectionsUtil {
     public static <T, U> void mapMergeAdd(Map<T, List<U>> map, Map<T, List<U>> mapToAdd) {
         for (Map.Entry<T, List<U>> e : mapToAdd.entrySet()) {
             if (!map.containsKey(e.getKey())) {
-                map.put(e.getKey(), new ArrayList<U>());
+                map.put(e.getKey(), new ArrayList<>());
             }
             map.get(e.getKey()).addAll(e.getValue());
         }
     }
 
     public static <T> Set<T> toSet(List<T> list) {
-        Set<T> set = new HashSet<T>();
-        for (T t : list) {
-            if (!set.contains(t)) {
-                set.add(t);
-            }
-        }
-        return set;
+        return new HashSet<>(list);
     }
 
 }

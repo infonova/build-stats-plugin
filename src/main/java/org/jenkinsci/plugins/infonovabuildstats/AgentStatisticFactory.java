@@ -27,7 +27,7 @@ public class AgentStatisticFactory {
      */
 
     public AgentStatisticFactory() {
-        jenkins = Jenkins.getInstance();
+        jenkins = Jenkins.get();
     }
 
     /**
