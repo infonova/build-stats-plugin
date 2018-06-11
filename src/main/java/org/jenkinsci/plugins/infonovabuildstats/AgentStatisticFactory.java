@@ -5,8 +5,9 @@ import hudson.model.Node;
 import jenkins.model.Jenkins;
 import org.jenkinsci.plugins.infonovabuildstats.model.AgentStatistic;
 import org.jenkinsci.plugins.mesos.JenkinsScheduler;
-import org.jenkinsci.plugins.mesos.Mesos;
 import org.jenkinsci.plugins.mesos.MesosSlave;
+import org.jenkinsci.plugins.mesos.scheduling.JenkinsSlave;
+import org.jenkinsci.plugins.mesos.scheduling.Result;
 
 import javax.annotation.CheckForNull;
 import java.util.Date;
@@ -58,14 +59,14 @@ public class AgentStatisticFactory {
 
             JenkinsScheduler jenkinsScheduler = (JenkinsScheduler) mesosSlave.getMesosInstance().getScheduler();
             if (jenkinsScheduler != null) {
-                JenkinsScheduler.Result result = jenkinsScheduler.getResult(agentName);
+                Result result = jenkinsScheduler.getResult(agentName);
 
                 if (result != null) {
-                    Mesos.JenkinsSlave jenkinsSlave = result.getSlave();
+                    JenkinsSlave jenkinsSlave = result.getSlave();
                     if (jenkinsSlave != null) {
                         cpus = jenkinsSlave.getCpus();
-                        memory = jenkinsSlave.getMem();
-                        mesosAgent = result.getSlave().getHostName();
+                        memory = (int)jenkinsSlave.getMem();
+                        mesosAgent = result.getSlave().getHostname();
                     }
                 }
             }

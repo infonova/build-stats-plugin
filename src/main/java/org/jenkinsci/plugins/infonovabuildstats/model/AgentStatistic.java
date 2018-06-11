@@ -2,6 +2,7 @@ package org.jenkinsci.plugins.infonovabuildstats.model;
 
 import org.apache.commons.lang.StringUtils;
 
+import java.io.Serializable;
 import java.util.Comparator;
 import java.util.Date;
 
@@ -98,7 +99,7 @@ public class AgentStatistic {
     }
 
     public Date getOnlineDate() {
-        return onlineDate;
+        return onlineDate != null ? new Date(onlineDate.getTime()) : null;
     }
 
     public long getOnlineTimeMillis() {
@@ -152,7 +153,10 @@ public class AgentStatistic {
         return onlineTimeMillis;
     }
 
-    public static class AntiChronologicalComparator extends ChronologicalComparator {
+    public static class AntiChronologicalComparator extends ChronologicalComparator implements Serializable {
+
+
+
         public int compare(AgentStatistic jbr1, AgentStatistic jbr2) {
             return super.compare(jbr1, jbr2) * -1;
         }
@@ -162,13 +166,13 @@ public class AgentStatistic {
      * the value 0 if the argument Date is equal to this Date; a value less than 0 if this Date is before the Date
      * argument; and a value greater than 0 if this Date is after the Date argument.
      */
-    public static class ChronologicalComparator implements Comparator<AgentStatistic> {
+    public static class ChronologicalComparator implements Comparator<AgentStatistic>, Serializable {
         public int compare(AgentStatistic jbr1, AgentStatistic jbr2) {
             return jbr1.offlineDate.compareTo(jbr2.offlineDate);
         }
     }
 
     public Date getOfflineDate() {
-        return offlineDate;
+        return offlineDate != null ? new Date(offlineDate.getTime()) : null;
     }
 }

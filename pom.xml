@@ -3,7 +3,7 @@
     <parent>
         <groupId>org.jenkins-ci.plugins</groupId>
         <artifactId>plugin</artifactId>
-        <version>1.554.3</version>
+        <version>3.2</version>
     </parent>
 
     <groupId>org.jenkins-ci.plugins</groupId>
@@ -66,46 +66,28 @@
     </pluginRepositories>
 
     <properties>
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <maven-hpi-plugin.version>1.108</maven-hpi-plugin.version>
-        <target-jdk.version>1.6</target-jdk.version>
+        <jenkins.version>2.107.2</jenkins.version>
+        <java.level>8</java.level>
+        <mockito.version>1.10.19</mockito.version>
+        <powermock.version>1.6.2</powermock.version>
+        <assertj.version>2.1.0</assertj.version>
+        <guava.version>18.0</guava.version>
     </properties>
 
     <dependencies>
         <dependency>
             <artifactId>mesos</artifactId>
             <groupId>org.jenkins-ci.plugins</groupId>
-            <version>0.9.0-INFONOVA-14</version>
+            <version>0.9.0-INFONOVA-19</version>
         </dependency>
     </dependencies>
 
     <build>
-        <plugins>
-            <plugin>
-                <groupId>org.jenkins-ci.tools</groupId>
-                <artifactId>maven-hpi-plugin</artifactId>
-                <extensions>true</extensions>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-compiler-plugin</artifactId>
-                <configuration>
-                    <source>${target-jdk.version}</source>
-                    <target>${target-jdk.version}</target>
-                </configuration>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-release-plugin</artifactId>
-                <version>2.5.1</version>
-            </plugin>
-        </plugins>
-
         <extensions>
             <extension>
                 <groupId>org.apache.maven.wagon</groupId>
                 <artifactId>wagon-webdav-jackrabbit</artifactId>
-                <version>2.4</version>
+                <version>2.10</version>
             </extension>
         </extensions>
     </build>

@@ -2,11 +2,13 @@ package org.jenkinsci.plugins.infonovabuildstats.model;
 
 import jenkins.model.Jenkins;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang.StringUtils;
 import org.jenkinsci.plugins.infonovabuildstats.utils.CollectionsUtil;
 
 import java.io.File;
-import java.io.FileWriter;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStreamWriter;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.logging.Level;
@@ -23,7 +25,7 @@ public class JobBuildResultSharder {
     /**
      * Format if saved file
      */
-    private static final SimpleDateFormat JOB_RESULT_FILENAME_SDF = new SimpleDateFormat("'agentStatistics-'YYYY-MM-dd'.xml'");
+    private static final String JOB_RESULT_FILENAME_SDF = "'agentStatistics-'YYYY-MM-dd'.xml'";
 
     /**
      * Path, from jenkins_home, to infonova-build-stats folder
@@ -62,7 +64,8 @@ public class JobBuildResultSharder {
         for (AgentStatistic r : results) {
             Calendar completedDate = Calendar.getInstance();
             completedDate.setTime(r.getOfflineDate());
-            String targetFilename = JOB_RESULT_FILENAME_SDF.format(completedDate.getTime());
+
+            String targetFilename = new SimpleDateFormat(JOB_RESULT_FILENAME_SDF).format(completedDate.getTime());
 
             if (!byDayJobResults.containsKey(targetFilename)) {
                 LOGGER.log(Level.FINER, "Filename (" + targetFilename + ") not contained, create new arrayList.");
@@ -145,20 +148,16 @@ public class JobBuildResultSharder {
 
             LOGGER.log(Level.FINE, "Writing jobResults to file: " + jobResultFilepath);
 
-            try {
+            String encoding = StringUtils.defaultIfBlank(System.getProperty("file.encoding"), "UTF-8");
+            try (OutputStreamWriter fw = new OutputStreamWriter(new FileOutputStream(jobResultFilepath), encoding)) {
                 // If file exists we want to append, if not exists this will work automatically
-            	FileWriter fw = new FileWriter(jobResultFilepath, true);
-            	List<AgentStatistic> daily = persistedDailyResults.get(filename);
+                List<AgentStatistic> daily = persistedDailyResults.get(filename);
 
-            	Iterator iter = daily.iterator();
+                Iterator iter = daily.iterator();
 
-            	while(iter.hasNext()){
-
-            		Jenkins.XSTREAM.toXML((AgentStatistic) iter.next(), fw);
-            	}
-
-                fw.close();
-
+                while (iter.hasNext()) {
+                    Jenkins.XSTREAM.toXML(iter.next(), fw);
+                }
             } catch (Exception e) {
                 LOGGER.log(Level.SEVERE, "Unable to serialize job results into " + jobResultFilepath, e);
                 throw new IllegalStateException("Unable to serialize job results into " + jobResultFilepath, e);
